@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "sensortower": {
+      "command": "uvx",
+      "args": ["sensortower-mcp"],
+      "env": {
+        "SENSOR_TOWER_API_TOKEN": "your_api_token_here"
+      }
+    }
+  }
+} 

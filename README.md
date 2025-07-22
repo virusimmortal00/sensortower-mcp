@@ -2,9 +2,16 @@
 
 Model Context Protocol server for Sensor Tower APIs using FastMCP with OpenAPI integration.
 
-## 🚀 Quick Start
+## 📋 Prerequisites
 
-### Option 1: Pre-built Docker Image (Recommended)
+Before installing, you'll need:
+
+1. **Sensor Tower API Token**: Get your token from [Sensor Tower API Settings](https://app.sensortower.com/users/edit/api-settings)
+2. **uv** (for MCP client integrations): Install with `curl -LsSf https://astral.sh/uv/install.sh | sh` or see [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
+
+## 🚀 Installation
+
+### Option 1: Docker (Recommended)
 
 The fastest way to get started is using our pre-built Docker image:
 
@@ -20,9 +27,82 @@ docker run -i \
   -e SENSOR_TOWER_API_TOKEN="your_token_here" \
   bobbysayers492/sensortower-mcp:latest \
   sensortower-mcp --transport stdio
+
+# Using Docker Compose (recommended for production)
+SENSOR_TOWER_API_TOKEN="your_token" docker-compose up -d
 ```
 
-### Option 2: PyPI Installation
+### Option 2: MCP Client Integration
+
+For AI assistants and IDEs that support MCP, add this server to your configuration:
+
+#### Cursor
+Add to your MCP settings (`~/.cursor-mcp/config.json`):
+```json
+{
+  "mcpServers": {
+    "sensortower": {
+      "command": "uvx",
+      "args": ["sensortower-mcp", "--transport", "stdio"],
+      "env": {
+        "SENSOR_TOWER_API_TOKEN": "your_token_here"
+      }
+    }
+  }
+}
+```
+
+#### VSCode with MCP Extension
+Add to your MCP configuration:
+```json
+{
+  "sensortower": {
+    "command": "uvx",
+    "args": ["sensortower-mcp", "--transport", "stdio"],
+    "env": {
+      "SENSOR_TOWER_API_TOKEN": "your_token_here"
+    }
+  }
+}
+```
+
+#### Claude Desktop
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+```json
+{
+  "mcpServers": {
+    "sensortower": {
+      "command": "uvx",
+      "args": ["sensortower-mcp", "--transport", "stdio"],
+      "env": {
+        "SENSOR_TOWER_API_TOKEN": "your_token_here"
+      }
+    }
+  }
+}
+```
+
+#### OpenAI Agents SDK
+For OpenAI agents, configure the MCP server:
+```python
+from openai import OpenAI
+from mcp import McpClient
+
+# Configure MCP client
+mcp_client = McpClient(
+    command="uvx",
+    args=["sensortower-mcp", "--transport", "stdio"],
+    env={"SENSOR_TOWER_API_TOKEN": "your_token_here"}
+)
+
+# Use with OpenAI agent
+client = OpenAI()
+# Integrate MCP tools with your agent implementation
+```
+
+After adding the configuration, restart your client to load the Sensor Tower MCP server.
+
+### Option 3: Direct Installation
 
 ```bash
 # From PyPI
@@ -32,47 +112,15 @@ pip install sensortower-mcp
 git clone https://github.com/yourusername/sensortower-mcp
 cd sensortower-mcp
 pip install -e .
-```
 
-### Configuration
-
-```bash
 # Set your API token
 export SENSOR_TOWER_API_TOKEN="your_token_here"
-```
 
-Get your API token from: https://app.sensortower.com/users/edit/api-settings
-
-### Usage
-
-#### Stdio Mode (for MCP clients)
-```bash
-# Local installation
+# Run with stdio transport (for MCP clients)
 sensortower-mcp --transport stdio
 
-# Docker
-docker run -i \
-  -e SENSOR_TOWER_API_TOKEN="your_token" \
-  bobbysayers492/sensortower-mcp:latest \
-  sensortower-mcp --transport stdio
-```
-
-#### HTTP Mode (for web integration)
-```bash
-# Local installation
+# Run with HTTP transport (for web integration)
 sensortower-mcp --transport http --port 8666
-
-# Docker
-docker run -p 8666:8666 \
-  -e SENSOR_TOWER_API_TOKEN="your_token" \
-  bobbysayers492/sensortower-mcp:latest \
-  sensortower-mcp --transport http --port 8666
-```
-
-#### Docker Compose (for persistent deployment)
-```bash
-# Using Docker Compose (recommended for production)
-SENSOR_TOWER_API_TOKEN="your_token" docker-compose up -d
 ```
 
 ## 📊 Available Tools
@@ -226,41 +274,9 @@ python tests/test_manual.py
 python tests/test_all.py
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run the test suite: `python tests/test_all.py`
-5. Submit a pull request
-
 ## 📄 License
 
 MIT License - see LICENSE file for details.
-
-## 🆘 Support
-
-- **Documentation**: See [tests/TESTING.md](tests/TESTING.md) for comprehensive guides
-- **Issues**: Create an issue on GitHub
-- **API Documentation**: https://docs.sensortower.com
-
-## 🏗️ Architecture
-
-```
-sensortower-mcp/
-├── main.py                 # Main MCP server implementation
-├── pyproject.toml         # Package configuration
-├── docker-compose.yml     # Docker deployment
-├── Dockerfile            # Container definition
-├── swaggerdocs/          # API documentation
-└── tests/                # Testing framework
-    ├── test_all.py       # Master test runner
-    ├── test_deployment.py # PyPI & Docker tests
-    ├── test_manual.py    # Quick validation
-    ├── test_load.py      # Performance tests
-    ├── test_security.py  # Security audit
-    └── README.md         # Testing documentation
-```
 
 Built with [FastMCP](https://github.com/jlowin/fastmcp) for streamlined MCP server development.
 

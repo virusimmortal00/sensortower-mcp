@@ -2,7 +2,7 @@
   "mcpServers": {
     "sensortower": {
       "command": "uvx",
-      "args": ["sensortower-mcp"],
+      "args": ["--from", "/Users/bobby.sayers/Documents/repos/sensortower-mcp", "sensortower-mcp"],
       "env": {
         "SENSOR_TOWER_API_TOKEN": "your_api_token_here"
       }

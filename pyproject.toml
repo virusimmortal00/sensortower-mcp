@@ -2,7 +2,7 @@
 name = "sensortower-mcp"
 version = "1.0.0"
 description = "Model Context Protocol server for Sensor Tower APIs using FastMCP"
-readme = "README.md"
+readme = "README-pypi.md"
 requires-python = ">=3.10"
 dependencies = [
     "fastmcp>=0.1.0",
@@ -28,4 +28,5 @@ build-backend = "hatchling.build"
 include = [
     "main.py",
     "swaggerdocs/**/*",
+    "README-pypi.md",
 ]

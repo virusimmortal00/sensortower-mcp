@@ -1,21 +1,20 @@
-version: '3.8'
-
 services:
   sensortower-mcp:
-    build: .
+    image: bobbysayers492/sensortower-mcp:latest
     container_name: sensortower-mcp
+    command: ["sensortower-mcp", "--transport", "http", "--port", "8666"]
     ports:
-      - "8080:8080"
+      - "8666:8666"
     environment:
       - SENSOR_TOWER_API_TOKEN=${SENSOR_TOWER_API_TOKEN}
       - TRANSPORT=http
-      - PORT=8080
+      - PORT=8666
       - API_BASE_URL=https://api.sensortower.com
-    volumes:
-      - ./logs:/app/logs
+    # volumes:
+      # - ./logs:/app/logs  # Not needed with published package
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8666/health"]
       interval: 30s
       timeout: 10s
       retries: 3

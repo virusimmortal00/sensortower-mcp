@@ -29,8 +29,8 @@ def parse_args():
     parser.add_argument(
         "--port",
         type=int,
-        default=int(os.getenv("PORT", "8080")),
-        help="HTTP server port (default: 8080)"
+        default=int(os.getenv("PORT", "8666")),
+        help="HTTP server port (default: 8666)"
     )
     parser.add_argument(
         "--token",

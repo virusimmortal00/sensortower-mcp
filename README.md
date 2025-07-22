@@ -1,7 +1,22 @@
 # Sensor Tower MCP Server
 
+[![PyPI version](https://badge.fury.io/py/sensortower-mcp.svg)](https://badge.fury.io/py/sensortower-mcp)
+[![Python versions](https://img.shields.io/pypi/pyversions/sensortower-mcp.svg)](https://pypi.org/project/sensortower-mcp/)
+[![Downloads](https://pepy.tech/badge/sensortower-mcp)](https://pepy.tech/project/sensortower-mcp)
+
 A Model Context Protocol (MCP) server providing access to Sensor Tower's comprehensive mobile app intelligence APIs. Connect to app store data, rankings, downloads, revenue estimates, and competitor intelligence through a standardized interface.
 
+## 🚀 Quick Install
+
+```bash
+# Install with uvx (recommended)
+uvx sensortower-mcp
+
+# Or install with pip
+pip install sensortower-mcp
+```
+
+📦 **[View on PyPI](https://pypi.org/project/sensortower-mcp/)**
 
 ## Available Tools
 
@@ -29,13 +44,6 @@ A Model Context Protocol (MCP) server providing access to Sensor Tower's compreh
 - **`get_country_codes`** - Get available country codes
 - **`get_category_ids`** - Get category IDs for iOS/Android
 - **`get_chart_types`** - Get available chart types for rankings
-
-## 🚀 Quick Install
-
-### Add to Cursor
-
-<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=sensortower&config=eyJzZW5zb3J0b3dlciI6eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJzZW5zb3J0b3dlci1tY3AiXSwiZW52Ijp7IlNFTlNPUl9UT1dFUl9BUElfVE9LRU4iOiJ5b3VyX2FwaV90b2tlbl9oZXJlIn19fQ=="><img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add Sensor Tower MCP to Cursor" width="200"></a>
-
 
 
 [Get your API token](https://app.sensortower.com/users/edit/api-settings) from Sensor Tower, then update your API token in the MCP server configuration.
@@ -135,29 +143,28 @@ Install the MCP extension and add this server configuration:
 
 **Pull and run from Docker Hub:**
 ```bash
-docker run -e SENSOR_TOWER_API_TOKEN="your_token" sensortower/sensortower-mcp
+# Run in stdio mode (MCP)
+docker run -e SENSOR_TOWER_API_TOKEN="your_token" bobbysayers492/sensortower-mcp
+
+# Run in HTTP mode
+docker run -e SENSOR_TOWER_API_TOKEN="your_token" -p 8666:8666 \
+  bobbysayers492/sensortower-mcp sensortower-mcp --transport http --port 8666
 ```
 
-**Build locally:**
-```bash
-git clone https://github.com/sensortower/sensortower-mcp.git
-cd sensortower-mcp
-docker build -t sensortower-mcp .
-docker run -e SENSOR_TOWER_API_TOKEN="your_token" sensortower-mcp
-```
+**Available on Docker Hub:** [bobbysayers492/sensortower-mcp](https://hub.docker.com/r/bobbysayers492/sensortower-mcp)
 
 **Docker Compose:**
 ```yaml
 version: '3.8'
 services:
   sensortower-mcp:
-    image: sensortower/sensortower-mcp
+    image: bobbysayers492/sensortower-mcp:latest
     environment:
       - SENSOR_TOWER_API_TOKEN=your_api_token_here
       - TRANSPORT=http
-      - PORT=8080
+      - PORT=8666
     ports:
-      - "8080:8080"
+      - "8666:8666"
 ```
 
 ### Direct Installation
@@ -189,7 +196,7 @@ export SENSOR_TOWER_API_TOKEN="your_api_token_here"
 |----------|-------------|---------|----------|
 | `SENSOR_TOWER_API_TOKEN` | Your Sensor Tower API authentication token | - | ✅ |
 | `TRANSPORT` | Transport mode: `stdio` or `http` | `stdio` | ❌ |
-| `PORT` | HTTP server port (when using `--transport=http`) | `8080` | ❌ |
+| `PORT` | HTTP server port (when using `--transport=http`) | `8666` | ❌ |
 | `API_BASE_URL` | Sensor Tower API base URL | `https://api.sensortower.com` | ❌ |
 
 ### Command Line Options
@@ -197,7 +204,7 @@ export SENSOR_TOWER_API_TOKEN="your_api_token_here"
 | Option | Environment Variable | Description | Default |
 |--------|---------------------|-------------|---------|
 | `--transport` | `TRANSPORT` | Transport mode: `stdio` or `http` | `stdio` |
-| `--port` | `PORT` | HTTP server port (only for `--transport=http`) | `8080` |
+| `--port` | `PORT` | HTTP server port (only for `--transport=http`) | `8666` |
 | `--token` | `SENSOR_TOWER_API_TOKEN` | API authentication token | Required |
 
 ### Transport
@@ -209,7 +216,7 @@ export SENSOR_TOWER_API_TOKEN="your_api_token_here"
 
 - **http** - for browser and network clients:
   ```bash
-  python main.py --transport http --port 8080
+  python main.py --transport http --port 8666
   ```
 
 ## Usage Examples
@@ -355,7 +362,6 @@ The server provides built-in documentation resources:
 ## License
 
 This project is licensed under the MIT License.
-
 ## Contributing
 
 1. Fork the repository
@@ -375,3 +381,4 @@ This project is licensed under the MIT License.
 ## Disclaimer
 
 This is an unofficial MCP server for Sensor Tower APIs. It is not affiliated with or endorsed by Sensor Tower. You must have a valid Sensor Tower subscription and API access to use this server.
+

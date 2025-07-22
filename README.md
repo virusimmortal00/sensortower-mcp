@@ -4,6 +4,14 @@ A Model Context Protocol (MCP) server providing access to Sensor Tower's compreh
 
 > **Note**: Brought to you as an example of FastMCP integration with enterprise APIs.
 
+## 🚀 Quick Install
+
+### Add to Cursor
+
+[![Add Sensor Tower MCP to Cursor](https://img.shields.io/badge/Add%20to-Cursor-0066CC?style=for-the-badge&logo=cursor&logoColor=white)](cursor://anysphere.cursor-deeplink/mcp/install?name=sensortower&config=eyJzZW5zb3J0b3dlciI6eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJzZW5zb3J0b3dlci1tY3AiXSwiZW52Ijp7IlNFTlNPUl9UT1dFUl9BUElfVE9LRU4iOiJ5b3VyX2FwaV90b2tlbl9oZXJlIn19fQ==)
+
+[Get your API token](https://app.sensortower.com/users/edit/api-settings) from Sensor Tower, then update your API token in the MCP server configuration.
+
 ## Installation
 
 ### Prerequisites
@@ -63,31 +71,14 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### Cursor
 
-**Option 1: Using uvx (recommended)**
+**Manual configuration for cursor-mcp-config.json:**
 ```json
 {
-  "mcpServers": {
-    "sensortower": {
-      "command": "uvx",
-      "args": ["--from", "/path/to/sensortower-mcp", "sensortower-mcp"],
-      "env": {
-        "SENSOR_TOWER_API_TOKEN": "your_api_token_here"
-      }
-    }
-  }
-}
-```
-
-**Option 2: Direct Python execution**
-```json
-{
-  "mcpServers": {
-    "sensortower": {
-      "command": "python",
-      "args": ["/path/to/sensortower-mcp/main.py"],
-      "env": {
-        "SENSOR_TOWER_API_TOKEN": "your_api_token_here"
-      }
+  "sensortower": {
+    "command": "uvx",
+    "args": ["sensortower-mcp"],
+    "env": {
+      "SENSOR_TOWER_API_TOKEN": "your_api_token_here"
     }
   }
 }

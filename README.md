@@ -2,13 +2,39 @@
 
 A Model Context Protocol (MCP) server providing access to Sensor Tower's comprehensive mobile app intelligence APIs. Connect to app store data, rankings, downloads, revenue estimates, and competitor intelligence through a standardized interface.
 
-> **Note**: Brought to you as an example of FastMCP integration with enterprise APIs.
+
+## Available Tools
+
+### 📱 App Intelligence API
+- **`get_app_metadata`** - Get app details like name, publisher, categories, descriptions, ratings
+- **`get_category_rankings`** - Fetch top ranking apps by category and chart type  
+- **`get_download_estimates`** - Retrieve download estimates by country and date ranges
+- **`get_revenue_estimates`** - Get revenue estimates and financial trends
+
+### 🏪 Store Intelligence API
+- **`get_featured_apps`** - Get apps featured on App Store's Apps & Games pages
+- **`get_featured_today_stories`** - Fetch App Store Today tab story metadata
+
+### 🔍 Usage Intelligence API
+- **`search_entities`** - Search for apps and publishers by name/description  
+- **`get_app_ids_by_category`** - Get app IDs from specific categories and date ranges
+
+### 📊 Connected Apps API
+- **`get_analytics_metrics`** - Access your own apps' analytics data (impressions, downloads, sessions)
+
+### 📺 Ad Intelligence API
+- **`get_advertising_creatives`** - Get advertising creative data for competitor analysis
+
+### 🛠️ Utility Tools
+- **`get_country_codes`** - Get available country codes
+- **`get_category_ids`** - Get category IDs for iOS/Android
+- **`get_chart_types`** - Get available chart types for rankings
 
 ## 🚀 Quick Install
 
 ### Add to Cursor
 
-[![Add Sensor Tower MCP to Cursor](https://cursor.com/deeplink/mcp-install-dark.png)](cursor://anysphere.cursor-deeplink/mcp/install?name=sensortower&config=eyJzZW5zb3J0b3dlciI6eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJzZW5zb3J0b3dlci1tY3AiXSwiZW52Ijp7IlNFTlNPUl9UT1dFUl9BUElfVE9LRU4iOiJ5b3VyX2FwaV90b2tlbl9oZXJlIn19fQ==)
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=sensortower&config=eyJzZW5zb3J0b3dlciI6eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJzZW5zb3J0b3dlci1tY3AiXSwiZW52Ijp7IlNFTlNPUl9UT1dFUl9BUElfVE9LRU4iOiJ5b3VyX2FwaV90b2tlbl9oZXJlIn19fQ=="><img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add Sensor Tower MCP to Cursor" width="200"></a>
 
 
 
@@ -72,6 +98,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ### Cursor
+
+**Setup Instructions:**
+- Follow the [Cursor MCP guide](https://docs.cursor.com/context/model-context-protocol) for complete setup
+- Make sure to use [Agent mode](https://docs.cursor.com/chat/agent) for best results
 
 **Manual configuration for cursor-mcp-config.json:**
 ```json
@@ -182,33 +212,6 @@ export SENSOR_TOWER_API_TOKEN="your_api_token_here"
   python main.py --transport http --port 8080
   ```
 
-## Available Tools
-
-### 📱 App Intelligence API
-- **`get_app_metadata`** - Get app details like name, publisher, categories, descriptions, ratings
-- **`get_category_rankings`** - Fetch top ranking apps by category and chart type  
-- **`get_download_estimates`** - Retrieve download estimates by country and date ranges
-- **`get_revenue_estimates`** - Get revenue estimates and financial trends
-
-### 🏪 Store Intelligence API
-- **`get_featured_apps`** - Get apps featured on App Store's Apps & Games pages
-- **`get_featured_today_stories`** - Fetch App Store Today tab story metadata
-
-### 🔍 Usage Intelligence API
-- **`search_entities`** - Search for apps and publishers by name/description  
-- **`get_app_ids_by_category`** - Get app IDs from specific categories and date ranges
-
-### 📊 Connected Apps API
-- **`get_analytics_metrics`** - Access your own apps' analytics data (impressions, downloads, sessions)
-
-### 📺 Ad Intelligence API
-- **`get_advertising_creatives`** - Get advertising creative data for competitor analysis
-
-### 🛠️ Utility Tools
-- **`get_country_codes`** - Get available country codes
-- **`get_category_ids`** - Get category IDs for iOS/Android
-- **`get_chart_types`** - Get available chart types for rankings
-
 ## Usage Examples
 
 ### Basic App Research
@@ -309,122 +312,6 @@ get_category_ids(os="android")
 # Get chart types
 get_chart_types()
 ```
-
-## Development
-
-### Setup
-
-1. **Clone repository:**
-   ```bash
-git clone https://github.com/sensortower/sensortower-mcp.git
-cd sensortower-mcp
-```
-
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   # or
-   pip install fastmcp httpx
-   ```
-
-3. **Set up environment:**
-   ```bash
-   export SENSOR_TOWER_API_TOKEN="your_api_token_here"
-   ```
-
-4. **Run in development mode:**
-   ```bash
-   python main.py --transport stdio
-   ```
-
-### Project Structure
-
-```
-sensortower-mcp/
-├── main.py              # FastMCP server implementation
-├── pyproject.toml       # Project configuration  
-├── requirements.txt     # Python dependencies
-├── Dockerfile          # Docker container setup
-├── docker-compose.yml  # Docker Compose configuration
-├── example.py          # Test script
-├── README.md          # This documentation
-└── swaggerdocs/       # API documentation
-    ├── app_analysis.yml
-    ├── market_analysis.yml
-    ├── store_marketing.yml
-    ├── custom_fields_metadata.yml
-    └── your_metrics.yml
-```
-
-### Testing
-
-**Run the test script:**
-```bash
-python example.py
-```
-
-**Test with MCP Inspector:**
-
-**stdio mode:**
-```bash
-SENSOR_TOWER_API_TOKEN="your_token" npx @modelcontextprotocol/inspector python main.py
-```
-
-**HTTP mode:**
-```bash
-# Start server
-python main.py --transport http --port 8080
-
-# In another terminal, test the health endpoint
-curl http://localhost:8080/health
-```
-
-### Building
-
-**Build for production:**
-```bash
-# Create distribution
-python -m build
-
-# Or create standalone executable
-pip install pyinstaller
-pyinstaller --onefile main.py
-```
-
-**Docker build:**
-```bash
-docker build -t sensortower-mcp .
-```
-
-## Architecture
-
-### FastMCP Integration
-
-This server leverages **FastMCP's automatic OpenAPI integration**:
-
-```
-FastMCP Server
-├── OpenAPI Spec → Auto-generated Tools (11 endpoints)
-├── Manual Tools → Utility functions (3 tools)  
-├── HTTP Client → httpx with auth headers
-└── Resources → Documentation & examples
-```
-
-**Benefits over manual MCP implementation:**
-- ✅ **90% less boilerplate code** - OpenAPI auto-generation  
-- ✅ **Built-in validation** - Type safety and error handling
-- ✅ **Automatic HTTP handling** - No manual request/response code
-- ✅ **Streamlined development** - Focus on business logic
-
-### API Coverage
-
-| API Category | Endpoints Covered |
-|-------------|-------------------|
-| App Intelligence | `/v1/{os}/apps`, `/v1/{os}/ranking`, `/v1/{os}/downloads`, `/v1/{os}/revenue` |
-| Store Intelligence | `/v1/ios/featured/apps`, `/v1/ios/featured/today/stories` |
-| Usage Intelligence | `/v1/{os}/search_entities`, `/v1/{os}/apps/app_ids` |
-| Connected Apps | `/v1/ios/sales_reports/analytics_metrics` |
-| Ad Intelligence | `/v1/{os}/advertising/creatives` |
 
 ## Error Handling
 

@@ -45,12 +45,12 @@ args = parse_args()
 # Initialize FastMCP server
 mcp = FastMCP("Sensor Tower")
 
-def get_auth_headers() -> Dict[str, str]:
-    """Get authentication headers for Sensor Tower API"""
+def get_auth_token() -> str:
+    """Get authentication token for Sensor Tower API"""
     auth_token = args.token
     if not auth_token:
         raise ValueError("SENSOR_TOWER_API_TOKEN environment variable or --token argument is required")
-    return {"X-AuthToken": auth_token}
+    return auth_token
 
 # Create HTTP client for Sensor Tower API - defer creation until we have token
 sensor_tower_client = None
@@ -75,7 +75,8 @@ def get_app_metadata(
         params = {
             "app_ids": app_ids,
             "country": country,
-            "include_sdk_data": include_sdk_data
+            "include_sdk_data": include_sdk_data,
+            "auth_token": get_auth_token()
         }
         response = await sensor_tower_client.get(f"/v1/{os}/apps", params=params)
         response.raise_for_status()
@@ -101,7 +102,8 @@ def get_category_rankings(
             "category": category,
             "chart_type": chart_type,
             "country": country,
-            "date": date
+            "date": date,
+            "auth_token": get_auth_token()
         }
         response = await sensor_tower_client.get(f"/v1/{os}/ranking", params=params)
         response.raise_for_status()
@@ -123,7 +125,7 @@ def get_download_estimates(
         raise ValueError("Sensor Tower client not initialized")
     
     async def _get_data():
-        params = {"app_ids": app_ids}
+        params = {"app_ids": app_ids, "auth_token": get_auth_token()}
         if countries:
             params["countries"] = countries
         if start_date:
@@ -151,7 +153,7 @@ def get_revenue_estimates(
         raise ValueError("Sensor Tower client not initialized")
     
     async def _get_data():
-        params = {"app_ids": app_ids}
+        params = {"app_ids": app_ids, "auth_token": get_auth_token()}
         if countries:
             params["countries"] = countries
         if start_date:
@@ -181,7 +183,8 @@ def search_entities(
         params = {
             "entity_type": entity_type,
             "term": term,
-            "limit": limit
+            "limit": limit,
+            "auth_token": get_auth_token()
         }
         response = await sensor_tower_client.get(f"/v1/{os}/search_entities", params=params)
         response.raise_for_status()
@@ -514,7 +517,6 @@ async def main():
     # Initialize HTTP client now that we have the token
     sensor_tower_client = httpx.AsyncClient(
         base_url=API_BASE_URL,
-        headers=get_auth_headers(),
         timeout=httpx.Timeout(30.0)
     )
     
@@ -560,7 +562,6 @@ def cli():
     # Initialize HTTP client now that we have the token
     sensor_tower_client = httpx.AsyncClient(
         base_url=API_BASE_URL,
-        headers=get_auth_headers(),
         timeout=httpx.Timeout(30.0)
     )
     

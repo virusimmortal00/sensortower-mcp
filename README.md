@@ -8,7 +8,9 @@ A Model Context Protocol (MCP) server providing access to Sensor Tower's compreh
 
 ### Add to Cursor
 
-[![Add Sensor Tower MCP to Cursor](https://img.shields.io/badge/Add%20to-Cursor-0066CC?style=for-the-badge&logo=cursor&logoColor=white)](cursor://anysphere.cursor-deeplink/mcp/install?name=sensortower&config=eyJzZW5zb3J0b3dlciI6eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJzZW5zb3J0b3dlci1tY3AiXSwiZW52Ijp7IlNFTlNPUl9UT1dFUl9BUElfVE9LRU4iOiJ5b3VyX2FwaV90b2tlbl9oZXJlIn19fQ==)
+[![Add Sensor Tower MCP to Cursor](https://cursor.com/deeplink/mcp-install-dark.png)](cursor://anysphere.cursor-deeplink/mcp/install?name=sensortower&config=eyJzZW5zb3J0b3dlciI6eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJzZW5zb3J0b3dlci1tY3AiXSwiZW52Ijp7IlNFTlNPUl9UT1dFUl9BUElfVE9LRU4iOiJ5b3VyX2FwaV90b2tlbl9oZXJlIn19fQ==)
+
+
 
 [Get your API token](https://app.sensortower.com/users/edit/api-settings) from Sensor Tower, then update your API token in the MCP server configuration.
 

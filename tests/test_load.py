@@ -12,6 +12,14 @@ import statistics
 from dataclasses import dataclass
 from typing import List, Dict, Any
 
+# Try to load .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load environment variables from .env file
+except ImportError:
+    # python-dotenv not installed, skip .env loading
+    pass
+
 @dataclass
 class TestResult:
     success: bool

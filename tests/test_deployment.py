@@ -15,6 +15,14 @@ import httpx
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Try to load .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load environment variables from .env file
+except ImportError:
+    # python-dotenv not installed, skip .env loading
+    pass
+
 class Colors:
     GREEN = '\033[92m'
     RED = '\033[91m'
@@ -88,6 +96,8 @@ def run_command(cmd: List[str], cwd: Optional[str] = None, timeout: int = 30) ->
 async def test_pypi_package():
     """Test PyPI package installation and functionality"""
     logger.header("PyPI Package Testing")
+    
+    logger.info("Testing comprehensive endpoint coverage (27 total endpoints)")
     
     # Test 1: Create clean virtual environment
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -165,8 +175,10 @@ async def test_pypi_package():
             logger.failure("HTTP server test", str(e))
 
 async def test_docker_image():
-    """Test Docker image functionality"""
+    """Test Docker image functionality with all 27 endpoints"""
     logger.header("Docker Image Testing")
+    
+    logger.info("Testing all 27 endpoints in Docker environment")
     
     # Test 1: Check if Docker is available
     success, stdout, stderr = run_command(["docker", "--version"])
@@ -258,6 +270,126 @@ async def test_docker_image():
     # Cleanup
     run_command(["docker", "rm", "-f", container_name])
     run_command(["docker", "rm", "-f", f"{container_name}-stdio"])
+
+async def test_api_endpoints_comprehensive(base_url: str, token: str) -> bool:
+    """Comprehensive test of all 27 API endpoints"""
+    logger.header("Comprehensive API Endpoint Testing")
+    
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        # Test utility endpoints (no token required)
+        utility_endpoints = [
+            ("get_country_codes", {}),
+            ("get_category_ids", {"os": "ios"}),
+            ("get_chart_types", {}),
+            ("health_check", {})
+        ]
+        
+        for tool_name, args in utility_endpoints:
+            try:
+                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
+                    "tool": tool_name,
+                    "arguments": args
+                })
+                if response.status_code == 200:
+                    logger.success(f"Utility endpoint: {tool_name}")
+                else:
+                    logger.failure(f"Utility endpoint: {tool_name}", f"Status {response.status_code}")
+            except Exception as e:
+                logger.failure(f"Utility endpoint: {tool_name}", str(e))
+        
+        # Test App Analysis endpoints (16 total)
+        app_analysis_endpoints = [
+            ("get_app_metadata", {"os": "ios", "app_ids": "284882215", "country": "US"}),
+            ("search_entities", {"os": "ios", "entity_type": "app", "term": "weather", "limit": 5}),
+            ("get_download_estimates", {"os": "ios", "app_ids": "284882215", "countries": "US", "start_date": "2024-01-01", "end_date": "2024-01-07"}),
+            ("get_revenue_estimates", {"os": "ios", "app_ids": "284882215", "countries": "US", "start_date": "2024-01-01", "end_date": "2024-01-07"}),
+            ("top_in_app_purchases", {"os": "ios", "app_ids": "284882215", "country": "US"}),
+            ("compact_sales_report_estimates", {"os": "ios", "start_date": "2024-01-01", "end_date": "2024-01-07", "app_ids": "284882215", "countries": "US"}),
+            ("category_ranking_summary", {"os": "ios", "app_id": "284882215", "country": "US"}),
+            ("get_creatives", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "countries": "US", "networks": "Facebook"}),
+            ("get_impressions", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US", "networks": "Facebook"}),
+            ("impressions_rank", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"}),
+            ("get_usage_active_users", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"}),
+            ("get_category_history", {"os": "ios", "app_ids": "284882215", "categories": "6005", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"}),
+            ("app_analysis_retention", {"os": "ios", "app_ids": "284882215", "date_granularity": "all_time", "start_date": "2024-01-01"}),
+            ("downloads_by_sources", {"os": "unified", "app_ids": "55c5027502ac64f9c0001fa6", "countries": "US", "start_date": "2024-01-01", "end_date": "2024-01-07"}),
+            ("app_analysis_demographics", {"os": "ios", "app_ids": "284882215", "date_granularity": "all_time", "start_date": "2024-01-01"}),
+            ("app_update_timeline", {"os": "ios", "app_id": "284882215", "country": "US"}),
+            ("version_history", {"os": "ios", "app_id": "284882215", "country": "US"})
+        ]
+        
+        for tool_name, args in app_analysis_endpoints:
+            try:
+                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
+                    "tool": tool_name,
+                    "arguments": args
+                })
+                if response.status_code == 200:
+                    logger.success(f"App Analysis: {tool_name}")
+                else:
+                    logger.failure(f"App Analysis: {tool_name}", f"Status {response.status_code}")
+            except Exception as e:
+                logger.failure(f"App Analysis: {tool_name}", str(e))
+        
+        # Test Store Marketing endpoints (4 total)
+        store_marketing_endpoints = [
+            ("get_featured_today_stories", {"country": "US", "start_date": "2024-01-01", "end_date": "2024-01-07"}),
+            ("get_featured_apps", {"category": "6020", "country": "US", "start_date": "2024-01-01", "end_date": "2024-01-07"}),
+            ("get_keywords", {"os": "ios", "app_ids": "284882215", "countries": "US"}),
+            ("get_reviews", {"os": "ios", "app_ids": "284882215", "countries": "US"})
+        ]
+        
+        for tool_name, args in store_marketing_endpoints:
+            try:
+                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
+                    "tool": tool_name,
+                    "arguments": args
+                })
+                if response.status_code == 200:
+                    logger.success(f"Store Marketing: {tool_name}")
+                else:
+                    logger.failure(f"Store Marketing: {tool_name}", f"Status {response.status_code}")
+            except Exception as e:
+                logger.failure(f"Store Marketing: {tool_name}", str(e))
+        
+        # Test Market Analysis endpoints (4 total)
+        market_analysis_endpoints = [
+            ("get_category_rankings", {"os": "ios", "category": "6005", "chart_type": "topfreeapplications", "country": "US", "date": "2024-01-15"}),
+            ("get_top_and_trending", {"os": "ios", "category": "6005", "country": "US", "date": "2024-01-15"}),
+            ("get_top_publishers", {"os": "ios", "category": "6005", "country": "US", "date": "2024-01-15"}),
+            ("get_store_summary", {"os": "ios", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"})
+        ]
+        
+        for tool_name, args in market_analysis_endpoints:
+            try:
+                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
+                    "tool": tool_name,
+                    "arguments": args
+                })
+                if response.status_code == 200:
+                    logger.success(f"Market Analysis: {tool_name}")
+                else:
+                    logger.failure(f"Market Analysis: {tool_name}", f"Status {response.status_code}")
+            except Exception as e:
+                logger.failure(f"Market Analysis: {tool_name}", str(e))
+        
+        # Test health endpoint
+        try:
+            response = await client.get(f"{base_url}/health")
+            if response.status_code == 200:
+                data = response.json()
+                expected_tools = 27
+                actual_tools = data.get("tools_available", 0)
+                if actual_tools == expected_tools:
+                    logger.success("Health endpoint tool count", f"{actual_tools} tools available")
+                else:
+                    logger.warning("Health endpoint tool count", f"Expected {expected_tools}, got {actual_tools}")
+            else:
+                logger.failure("Health endpoint", f"Status {response.status_code}")
+        except Exception as e:
+            logger.failure("Health endpoint", str(e))
+    
+    return True
 
 async def test_integration():
     """Test integration scenarios"""

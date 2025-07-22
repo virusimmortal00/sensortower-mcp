@@ -7,9 +7,61 @@
 
 Model Context Protocol server for Sensor Tower APIs using FastMCP with OpenAPI integration.
 
+## 📊 API Coverage Status
+
+| API Category | Endpoints | Coverage | Implemented |
+|--------------|-----------|----------|-------------|
+| **App Analysis** | 17 total | ✅ Nearly Complete (16/17) | `apps`, `sales_report_estimates`, `top_in_app_purchases`, `creatives`, `impressions`, `usage_active_users`, `category_history`, `get_search_entities`, `compact_sales_report_estimates`, `category_ranking_summary`, `impressions_rank`, `app_analysis_retention`, `downloads_by_sources`, `app_analysis_demographics`, `app_update_timeline`, `version_history` |
+| **Store Marketing** | 15 total | 🔄 Partial (4/15) | `featured_today_stories`, `featured_apps`, `keywords`, `get_reviews` |
+| **Market Analysis** | 7 total | 🔄 Partial (4/7) | `get_category_rankings`, `top_and_trending`, `top_publishers`, `store_summary` |
+| **Custom Fields** | 13 total | ⏸️ Planned | *Not yet implemented* |
+| **Your Metrics** | 5 total | ⏸️ Planned | *Not yet implemented* |
+
+**Overall Coverage: 24/39 endpoints (62%)**
+
+> 💡 **Endpoint names match Sensor Tower's official API documentation `operationId` values**
+
 ---
 
-## 📋 Table of Contents
+## ⚙️ Configuration
+
+### Using .env File (Recommended)
+
+Create a `.env` file in your project root for easy configuration:
+
+```bash
+# Required: Your Sensor Tower API token
+SENSOR_TOWER_API_TOKEN=your_actual_token_here
+
+# Optional: Server configuration
+TRANSPORT=http
+PORT=8666
+API_BASE_URL=https://api.sensortower.com
+
+# Optional: Performance tuning
+TIMEOUT=30
+```
+
+### Environment Variables
+
+All configuration can also be set via environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SENSOR_TOWER_API_TOKEN` | Your API token (required) | None |
+| `TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` |
+| `PORT` | HTTP server port | `8666` |
+| `API_BASE_URL` | Sensor Tower API base URL | `https://api.sensortower.com` |
+
+### Getting Your API Token
+
+1. Visit [Sensor Tower API Settings](https://app.sensortower.com/users/edit/api-settings)
+2. Generate a new API token if you don't have one
+3. Copy the token to your `.env` file or environment variables
+
+---
+
+## �� Table of Contents
 
 - [Prerequisites](#-prerequisites)
 - [Installation](#-installation)
@@ -40,6 +92,23 @@ Before installing, you'll need:
 
 The fastest way to get started is using our pre-built Docker image:
 
+**Using .env file (Recommended):**
+```bash
+# Create .env file with your token
+echo "SENSOR_TOWER_API_TOKEN=your_token_here" > .env
+
+# Run with HTTP transport
+docker run -p 8666:8666 --env-file .env \
+  bobbysayers492/sensortower-mcp:latest \
+  sensortower-mcp --transport http --port 8666
+
+# Run with stdio transport (for MCP clients)
+docker run --env-file .env \
+  bobbysayers492/sensortower-mcp:latest \
+  sensortower-mcp --transport stdio
+```
+
+**Using environment variables:**
 ```bash
 # Run with HTTP transport
 docker run -p 8666:8666 \
@@ -48,13 +117,9 @@ docker run -p 8666:8666 \
   sensortower-mcp --transport http --port 8666
 
 # Run with stdio transport (for MCP clients)
-docker run -i \
-  -e SENSOR_TOWER_API_TOKEN="your_token_here" \
+docker run -e SENSOR_TOWER_API_TOKEN="your_token_here" \
   bobbysayers492/sensortower-mcp:latest \
   sensortower-mcp --transport stdio
-
-# Using Docker Compose (recommended for production)
-SENSOR_TOWER_API_TOKEN="your_token" docker-compose up -d
 ```
 
 ### Option 2: MCP Client Integration
@@ -129,22 +194,28 @@ After adding the configuration, restart your client to load the Sensor Tower MCP
 
 ### Option 3: Direct Installation
 
+Install the package directly from PyPI:
+
 ```bash
-# From PyPI
+# Install the package
 pip install sensortower-mcp
 
-# From source
-git clone https://github.com/yourusername/sensortower-mcp
-cd sensortower-mcp
-pip install -e .
+# Create .env file with your token (recommended)
+echo "SENSOR_TOWER_API_TOKEN=your_token_here" > .env
 
-# Set your API token
+# Run with HTTP transport
+sensortower-mcp --transport http --port 8666
+
+# Or run with stdio transport (for MCP clients)  
+sensortower-mcp --transport stdio
+```
+
+**Alternative: Using environment variables**
+```bash
+# Set environment variable
 export SENSOR_TOWER_API_TOKEN="your_token_here"
 
-# Run with stdio transport (for MCP clients)
-sensortower-mcp --transport stdio
-
-# Run with HTTP transport (for web integration)
+# Run the server
 sensortower-mcp --transport http --port 8666
 ```
 

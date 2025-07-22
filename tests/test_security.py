@@ -13,6 +13,14 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
+# Try to load .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load environment variables from .env file
+except ImportError:
+    # python-dotenv not installed, skip .env loading
+    pass
+
 class SecurityTester:
     def __init__(self):
         self.issues = []

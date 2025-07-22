@@ -14,6 +14,14 @@ import httpx
 from fastmcp import FastMCP
 from typing import Dict, List, Optional, Any
 
+# Try to load .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load environment variables from .env file
+except ImportError:
+    # python-dotenv not installed, skip .env loading
+    pass
+
 # Base configuration
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.sensortower.com")
 
@@ -57,6 +65,585 @@ sensor_tower_client = None
 
 # Global variables for deferred initialization
 api_mcp = None
+
+# App Analysis API endpoints
+@mcp.tool
+def top_in_app_purchases(
+    os: str,
+    app_ids: str,
+    country: str = "US"
+) -> Dict[str, Any]:
+    """Retrieve top in-app purchases for the requested app IDs."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "country": country,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/apps/top_in_app_purchases", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def get_creatives(
+    os: str,
+    app_ids: str,
+    start_date: str,
+    countries: str,
+    networks: str,
+    end_date: str = None
+) -> Dict[str, Any]:
+    """Fetch advertising creatives for apps with Share of Voice and publisher data."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "start_date": start_date,
+            "countries": countries,
+            "networks": networks,
+            "auth_token": get_auth_token()
+        }
+        if end_date:
+            params["end_date"] = end_date
+        
+        response = await sensor_tower_client.get(f"/v1/{os}/ad_intel/creatives", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def get_impressions(
+    os: str,
+    app_ids: str,
+    start_date: str,
+    end_date: str,
+    countries: str,
+    networks: str,
+    date_granularity: str = "daily"
+) -> Dict[str, Any]:
+    """Get advertising impressions data for apps."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "start_date": start_date,
+            "end_date": end_date,
+            "countries": countries,
+            "networks": networks,
+            "date_granularity": date_granularity,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/ad_intel/impressions", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def get_usage_active_users(
+    os: str,
+    app_ids: str,
+    start_date: str,
+    end_date: str,
+    countries: str = "US",
+    date_granularity: str = "daily"
+) -> Dict[str, Any]:
+    """Get usage intelligence active users data."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "start_date": start_date,
+            "end_date": end_date,
+            "countries": countries,
+            "date_granularity": date_granularity,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/usage_intelligence/active_users", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def get_category_history(
+    os: str,
+    app_ids: str,
+    categories: str,
+    start_date: str,
+    end_date: str,
+    countries: str = "US"
+) -> Dict[str, Any]:
+    """Get category ranking history for apps."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "categories": categories,
+            "start_date": start_date,
+            "end_date": end_date,
+            "countries": countries,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/category_history", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def compact_sales_report_estimates(
+    os: str,
+    start_date: str,
+    end_date: str,
+    app_ids: str = None,
+    publisher_ids: str = None,
+    unified_app_ids: str = None,
+    unified_publisher_ids: str = None,
+    categories: str = None,
+    countries: str = "US",
+    date_granularity: str = "daily"
+) -> Dict[str, Any]:
+    """Get download and revenue estimates in compact format."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "countries": countries,
+            "date_granularity": date_granularity,
+            "auth_token": get_auth_token()
+        }
+        if app_ids:
+            params["app_ids"] = app_ids
+        if publisher_ids:
+            params["publisher_ids"] = publisher_ids
+        if unified_app_ids:
+            params["unified_app_ids"] = unified_app_ids
+        if unified_publisher_ids:
+            params["unified_publisher_ids"] = unified_publisher_ids
+        if categories:
+            params["categories"] = categories
+        
+        response = await sensor_tower_client.get(f"/v1/{os}/compact_sales_report_estimates", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def category_ranking_summary(
+    os: str,
+    app_id: str,
+    country: str
+) -> Dict[str, Any]:
+    """Get today's category ranking summary for a particular app."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_id": app_id,
+            "country": country,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/category/category_ranking_summary", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def impressions_rank(
+    os: str,
+    app_ids: str,
+    start_date: str,
+    end_date: str,
+    countries: str,
+    networks: str = None
+) -> Dict[str, Any]:
+    """Get advertising impressions rank data for apps."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "start_date": start_date,
+            "end_date": end_date,
+            "countries": countries,
+            "auth_token": get_auth_token()
+        }
+        if networks:
+            params["networks"] = networks
+        
+        response = await sensor_tower_client.get(f"/v1/{os}/ad_intel/network_analysis/rank", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def app_analysis_retention(
+    os: str,
+    app_ids: str,
+    date_granularity: str,
+    start_date: str,
+    end_date: str = None,
+    country: str = None
+) -> Dict[str, Any]:
+    """Get retention analysis data for apps."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "date_granularity": date_granularity,
+            "start_date": start_date,
+            "auth_token": get_auth_token()
+        }
+        if end_date:
+            params["end_date"] = end_date
+        if country:
+            params["country"] = country
+        
+        response = await sensor_tower_client.get(f"/v1/{os}/usage_intelligence/retention", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def downloads_by_sources(
+    os: str,
+    app_ids: str,
+    countries: str,
+    start_date: str,
+    end_date: str,
+    date_granularity: str = "monthly"
+) -> Dict[str, Any]:
+    """Get app downloads by sources (organic, paid, browser)."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "countries": countries,
+            "start_date": start_date,
+            "end_date": end_date,
+            "date_granularity": date_granularity,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/downloads_by_sources", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def app_analysis_demographics(
+    os: str,
+    app_ids: str,
+    date_granularity: str,
+    start_date: str,
+    end_date: str = None,
+    country: str = None
+) -> Dict[str, Any]:
+    """Get demographic analysis data for apps."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "date_granularity": date_granularity,
+            "start_date": start_date,
+            "auth_token": get_auth_token()
+        }
+        if end_date:
+            params["end_date"] = end_date
+        if country:
+            params["country"] = country
+        
+        response = await sensor_tower_client.get(f"/v1/{os}/usage_intelligence/demographics", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def app_update_timeline(
+    os: str,
+    app_id: str,
+    country: str = "US",
+    date_limit: str = "10"
+) -> Dict[str, Any]:
+    """Get app update history timeline."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_id": app_id,
+            "country": country,
+            "date_limit": date_limit,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/app_update/get_app_update_history", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def version_history(
+    os: str,
+    app_id: str,
+    country: str = "US"
+) -> Dict[str, Any]:
+    """Get version history for a particular app."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_id": app_id,
+            "country": country,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/apps/version_history", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+# Store Marketing API endpoints  
+@mcp.tool
+def get_featured_today_stories(
+    country: str = "US",
+    start_date: str = None,
+    end_date: str = None
+) -> Dict[str, Any]:
+    """Retrieve featured today story metadata from App Store."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {"country": country, "auth_token": get_auth_token()}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        
+        response = await sensor_tower_client.get("/v1/ios/featured/today/stories", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def get_featured_apps(
+    category: str,
+    country: str = "US",
+    start_date: str = None,
+    end_date: str = None
+) -> Dict[str, Any]:
+    """Retrieve apps featured on the App Store's Apps & Games pages."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "category": category,
+            "country": country,
+            "auth_token": get_auth_token()
+        }
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        
+        response = await sensor_tower_client.get("/v1/ios/featured/apps", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def get_keywords(
+    os: str,
+    app_ids: str,
+    countries: str = "US",
+    start_date: str = None,
+    end_date: str = None
+) -> Dict[str, Any]:
+    """Get keyword rankings for apps."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "countries": countries,
+            "auth_token": get_auth_token()
+        }
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        
+        response = await sensor_tower_client.get(f"/v1/{os}/keywords", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool  
+def get_reviews(
+    os: str,
+    app_ids: str,
+    countries: str = "US",
+    start_date: str = None,
+    end_date: str = None,
+    rating: str = None
+) -> Dict[str, Any]:
+    """Get app reviews and ratings data."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "app_ids": app_ids,
+            "countries": countries,
+            "auth_token": get_auth_token()
+        }
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        if rating:
+            params["rating"] = rating
+        
+        response = await sensor_tower_client.get(f"/v1/{os}/reviews", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+# Market Analysis API endpoints
+@mcp.tool
+def get_top_and_trending(
+    os: str,
+    category: str,
+    country: str,
+    date: str,
+    chart_type: str = "top"
+) -> Dict[str, Any]:
+    """Get top and trending apps data."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "category": category,
+            "country": country,
+            "date": date,
+            "chart_type": chart_type,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/top_and_trending", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def get_top_publishers(
+    os: str,
+    category: str,
+    country: str,
+    date: str,
+    metric: str = "downloads"
+) -> Dict[str, Any]:
+    """Get top publishers by category and metric."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "category": category,
+            "country": country,
+            "date": date,
+            "metric": metric,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/top_publishers", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
+
+@mcp.tool
+def get_store_summary(
+    os: str,
+    start_date: str,
+    end_date: str,
+    countries: str = "US"
+) -> Dict[str, Any]:
+    """Get app store summary statistics."""
+    import asyncio
+    if not sensor_tower_client:
+        raise ValueError("Sensor Tower client not initialized")
+    
+    async def _get_data():
+        params = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "countries": countries,
+            "auth_token": get_auth_token()
+        }
+        response = await sensor_tower_client.get(f"/v1/{os}/store_summary", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    return asyncio.create_task(_get_data())
 
 # Simple @mcp.tool decorators - using sync functions that handle async internally
 @mcp.tool
@@ -297,25 +884,36 @@ def api_documentation() -> str:
     
     ## Available Tools:
     
-    ### App Intelligence API
+    ### App Intelligence API (16 endpoints)
     - **get_app_metadata**: Get app details like name, publisher, categories, descriptions, ratings
-    - **get_category_rankings**: Get top ranking apps by category and chart type  
     - **get_download_estimates**: Retrieve download estimates by country and date
     - **get_revenue_estimates**: Get revenue estimates and trends
+    - **top_in_app_purchases**: Get top in-app purchases for apps
+    - **compact_sales_report_estimates**: Get sales estimates in compact format
+    - **category_ranking_summary**: Get today's category ranking summary for an app
+    - **get_creatives**: Get advertising creatives with Share of Voice data
+    - **get_impressions**: Get advertising impressions data
+    - **impressions_rank**: Get advertising impressions rank data
+    - **get_usage_active_users**: Get usage intelligence active users data
+    - **get_category_history**: Get category ranking history for apps
+    - **app_analysis_retention**: Get retention analysis data for apps
+    - **downloads_by_sources**: Get downloads by organic/paid/browser sources
+    - **app_analysis_demographics**: Get demographic analysis data for apps
+    - **app_update_timeline**: Get app update history timeline
+    - **version_history**: Get app version history
+    - **search_entities**: Search for apps and publishers by name/description
     
-    ### Store Intelligence API  
+    ### Store Intelligence API (4 endpoints)
     - **get_featured_apps**: Get apps featured on App Store's Apps & Games pages
     - **get_featured_today_stories**: Fetch App Store Today tab story metadata
+    - **get_keywords**: Get keyword rankings for apps
+    - **get_reviews**: Get app reviews and ratings data
     
-    ### Usage Intelligence API
-    - **search_entities**: Search for apps and publishers by name/description
-    - **get_app_ids_by_category**: Get app IDs from specific categories and date ranges
-    
-    ### Connected Apps API
-    - **get_analytics_metrics**: Access your own apps' analytics data
-    
-    ### Ad Intelligence API
-    - **get_advertising_creatives**: Get advertising creative data for competitor analysis
+    ### Market Analysis API (4 endpoints)
+    - **get_category_rankings**: Get top ranking apps by category and chart type
+    - **get_top_and_trending**: Get top and trending apps data
+    - **get_top_publishers**: Get top publishers by category and metric
+    - **get_store_summary**: Get app store summary statistics
     
     ### Utility Tools
     - **get_country_codes**: Get available country codes
@@ -492,7 +1090,7 @@ def get_health_data() -> Dict[str, Any]:
         "service": "Sensor Tower MCP Server", 
         "transport": args.transport,
         "api_base_url": API_BASE_URL,
-        "tools_available": 9  # 5 API tools + 4 utility tools
+        "tools_available": 27  # 23 API tools + 4 utility tools
     }
 
 # Add HTTP health check endpoint using custom route
@@ -526,7 +1124,7 @@ async def main():
     print(f"🚌 Transport: {args.transport}")
     if args.transport == "http":
         print(f"🌐 Port: {args.port}")
-    print(f"🔧 Available tools: 9")  # 5 API tools + 4 utility tools
+    print(f"🔧 Available tools: 27")  # 23 API tools + 4 utility tools
     
     try:
         if args.transport == "stdio":
@@ -571,7 +1169,7 @@ def cli():
     print(f"🚌 Transport: {args.transport}")
     if args.transport == "http":
         print(f"🌐 Port: {args.port}")
-    print(f"🔧 Available tools: 9")  # 5 API tools + 4 utility tools
+    print(f"🔧 Available tools: 27")  # 23 API tools + 4 utility tools
     
     try:
         if args.transport == "stdio":

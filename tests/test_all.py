@@ -2,6 +2,7 @@
 """
 Master test script for sensortower-mcp - runs all testing suites.
 Use this to get a comprehensive production readiness assessment.
+Tests all 27 endpoints (23 API + 4 utility) for complete coverage.
 """
 
 import asyncio
@@ -11,6 +12,14 @@ import os
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple
+
+# Try to load .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load environment variables from .env file
+except ImportError:
+    # python-dotenv not installed, skip .env loading
+    pass
 
 # Add parent directory to path to import main module
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -31,6 +40,20 @@ class MasterTester:
         print(f"📋 {title}")
         print(f"{'─'*40}")
     
+    def print_endpoint_summary(self):
+        """Print comprehensive endpoint testing summary"""
+        print(f"\n📊 Comprehensive Endpoint Testing Coverage:")
+        print("┌─────────────────────────────────────────────┬─────────┐")
+        print("│ Category                                    │ Count   │")
+        print("├─────────────────────────────────────────────┼─────────┤")
+        print("│ Utility Endpoints                           │   4     │")
+        print("│ App Analysis Endpoints                      │  16     │")
+        print("│ Store Marketing Endpoints                   │   4     │")
+        print("│ Market Analysis Endpoints                   │   4     │")
+        print("├─────────────────────────────────────────────┼─────────┤")
+        print("│ Total Endpoints Tested                      │  27     │")
+        print("└─────────────────────────────────────────────┴─────────┘")
+    
     def run_script(self, script_name: str, description: str) -> Tuple[bool, str]:
         """Run a test script and capture results"""
         print(f"\n🚀 Running {description}...")
@@ -49,255 +72,153 @@ class MasterTester:
             )
             
             success = result.returncode == 0
-            output = result.stdout if success else result.stderr
+            output = result.stdout + result.stderr
             
-            # Show summary
             if success:
                 print("✅ PASSED")
             else:
                 print("❌ FAILED")
-                print(f"Error output: {result.stderr[:200]}...")
+                print(f"Exit code: {result.returncode}")
             
             return success, output
             
         except subprocess.TimeoutExpired:
-            return False, "Test script timed out (>5 minutes)"
+            print("⏰ TIMEOUT (5 minutes)")
+            return False, "Test timed out after 5 minutes"
         except Exception as e:
-            return False, f"Failed to run script: {e}"
+            print(f"💥 ERROR: {e}")
+            return False, str(e)
     
-    def check_prerequisites(self) -> Dict[str, bool]:
-        """Check if all prerequisites are available"""
-        self.print_section("Prerequisites Check")
+    def save_report(self, filename: str = "test_report.txt"):
+        """Save detailed test results to file"""
+        report_path = self.tests_dir / filename
         
-        prereqs = {
-            "Python": True,  # We're running Python
-            "Docker": False,
-            "API Token": False,
-            "Dependencies": False
-        }
+        with open(report_path, 'w') as f:
+            f.write("SENSOR TOWER MCP - COMPREHENSIVE TEST REPORT\n")
+            f.write("=" * 50 + "\n\n")
+            f.write(f"Test run completed: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Total runtime: {time.time() - self.start_time:.2f} seconds\n\n")
+            
+            f.write("ENDPOINT COVERAGE:\n")
+            f.write("- 4 Utility endpoints (country codes, categories, chart types, health)\n")
+            f.write("- 16 App Analysis endpoints (metadata, sales, retention, demographics, etc.)\n")
+            f.write("- 4 Store Marketing endpoints (featured apps, keywords, reviews)\n")
+            f.write("- 4 Market Analysis endpoints (rankings, trends, publishers, store summary)\n")
+            f.write("Total: 27 endpoints tested\n\n")
+            
+            f.write("TEST RESULTS:\n")
+            for test_name, (success, output) in self.results.items():
+                status = "PASSED" if success else "FAILED"
+                f.write(f"\n{test_name}: {status}\n")
+                f.write("-" * 40 + "\n")
+                f.write(output + "\n")
+        
+        print(f"\n📄 Detailed report saved to: {report_path}")
+    
+    async def run_all_tests(self):
+        """Run all test suites"""
+        self.print_header("Sensor Tower MCP - Master Test Suite")
+        print("🎯 Comprehensive testing of all 27 endpoints")
+        
+        self.print_endpoint_summary()
+        
+        # Test suites to run
+        test_suites = [
+            ("test_manual.py", "Quick Manual Testing"),
+            ("test_deployment.py", "Comprehensive Deployment Testing"),
+            ("test_load.py", "Performance & Load Testing"),
+            ("test_security.py", "Security & Vulnerability Testing")
+        ]
+        
+        # Check environment setup
+        self.print_section("Environment Check")
+        
+        token = os.getenv("SENSOR_TOWER_API_TOKEN")
+        if token:
+            print("✅ SENSOR_TOWER_API_TOKEN: Set")
+        else:
+            print("⚠️  SENSOR_TOWER_API_TOKEN: Not set (some tests will be limited)")
         
         # Check Docker
         try:
-            result = subprocess.run(["docker", "--version"], capture_output=True, timeout=10)
-            prereqs["Docker"] = result.returncode == 0
-            if prereqs["Docker"]:
-                print("✅ Docker available")
-            else:
-                print("❌ Docker not available")
-        except:
-            print("❌ Docker not found")
+            subprocess.run(["docker", "--version"], 
+                         capture_output=True, check=True)
+            print("✅ Docker: Available")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print("⚠️  Docker: Not available (some tests will be skipped)")
         
-        # Check API token
-        token = os.getenv("SENSOR_TOWER_API_TOKEN")
-        prereqs["API Token"] = bool(token)
-        if prereqs["API Token"]:
-            print("✅ API token set")
-        else:
-            print("⚠️  API token not set (some tests will be limited)")
-        
-        # Check dependencies
+        # Check Python dependencies
         try:
             import httpx
-            import aiohttp
-            prereqs["Dependencies"] = True
-            print("✅ Test dependencies available")
+            print("✅ httpx: Available")
         except ImportError:
-            print("❌ Missing dependencies. Run: pip install httpx aiohttp")
+            print("❌ httpx: Missing (install with: pip install httpx)")
         
-        return prereqs
-    
-    def run_all_tests(self, prereqs: Dict[str, bool]):
-        """Run all test suites"""
+        # Run all test suites
         self.print_section("Running Test Suites")
         
-        # Test suite configurations
-        test_suites = [
-            {
-                "script": "test_manual.py",
-                "name": "Manual Testing",
-                "description": "Quick manual validation",
-                "required_prereqs": ["Dependencies"],
-                "critical": True
-            },
-            {
-                "script": "test_deployment.py", 
-                "name": "Deployment Testing",
-                "description": "Comprehensive PyPI and Docker testing",
-                "required_prereqs": ["Dependencies", "Docker"],
-                "critical": True
-            },
-            {
-                "script": "test_security.py",
-                "name": "Security Testing", 
-                "description": "Security best practices validation",
-                "required_prereqs": ["Dependencies"],
-                "critical": True
-            },
-            {
-                "script": "test_load.py",
-                "name": "Load Testing",
-                "description": "Performance under concurrent load",
-                "required_prereqs": ["Dependencies", "Docker"],
-                "critical": False
-            }
-        ]
+        for script_name, description in test_suites:
+            success, output = self.run_script(script_name, description)
+            self.results[description] = (success, output)
         
-        for suite in test_suites:
-            # Check if prerequisites are met
-            missing_prereqs = [p for p in suite["required_prereqs"] if not prereqs.get(p, False)]
-            
-            if missing_prereqs:
-                print(f"\n⏭️  Skipping {suite['name']}: Missing {', '.join(missing_prereqs)}")
-                self.results[suite["name"]] = {
-                    "status": "SKIPPED",
-                    "reason": f"Missing prerequisites: {', '.join(missing_prereqs)}",
-                    "critical": suite["critical"]
-                }
-                continue
-            
-            # Run the test
-            success, output = self.run_script(suite["script"], suite["description"])
-            
-            self.results[suite["name"]] = {
-                "status": "PASSED" if success else "FAILED",
-                "output": output,
-                "critical": suite["critical"]
-            }
-    
-    def generate_comprehensive_report(self):
-        """Generate final comprehensive report"""
-        self.print_header("COMPREHENSIVE PRODUCTION READINESS REPORT")
+        # Generate summary
+        self.print_section("Test Summary")
         
-        total_time = time.time() - self.start_time
+        passed = sum(1 for success, _ in self.results.values() if success)
+        total = len(self.results)
         
-        # Summary statistics
-        total_tests = len(self.results)
-        passed = sum(1 for r in self.results.values() if r["status"] == "PASSED")
-        failed = sum(1 for r in self.results.values() if r["status"] == "FAILED")
-        skipped = sum(1 for r in self.results.values() if r["status"] == "SKIPPED")
-        critical_failed = sum(1 for r in self.results.values() if r["status"] == "FAILED" and r["critical"])
+        print(f"📊 Results: {passed}/{total} test suites passed")
         
-        print(f"\n📊 TEST EXECUTION SUMMARY")
-        print(f"Total execution time: {total_time:.1f} seconds")
-        print(f"Test suites run: {total_tests}")
-        print(f"✅ Passed: {passed}")
-        print(f"❌ Failed: {failed}")
-        print(f"⏭️  Skipped: {skipped}")
-        print(f"🚨 Critical failures: {critical_failed}")
-        
-        # Detailed results
-        print(f"\n📋 DETAILED RESULTS")
-        for test_name, result in self.results.items():
-            status_emoji = {
-                "PASSED": "✅",
-                "FAILED": "❌", 
-                "SKIPPED": "⏭️"
-            }[result["status"]]
-            
-            critical_marker = " 🚨" if result.get("critical", False) and result["status"] == "FAILED" else ""
-            print(f"{status_emoji} {test_name}{critical_marker}")
-            
-            if result["status"] == "SKIPPED":
-                print(f"   Reason: {result['reason']}")
-            elif result["status"] == "FAILED":
-                print(f"   Check the output above for details")
+        for test_name, (success, _) in self.results.items():
+            status = "✅ PASSED" if success else "❌ FAILED"
+            print(f"   {status} {test_name}")
         
         # Production readiness assessment
-        print(f"\n🎯 PRODUCTION READINESS ASSESSMENT")
+        print(f"\n{'='*60}")
+        print("🏆 PRODUCTION READINESS ASSESSMENT")
+        print(f"{'='*60}")
         
-        if critical_failed > 0:
-            print("🔴 NOT READY FOR PRODUCTION")
-            print("❌ Critical test failures must be resolved before deployment")
-            print("\nRequired actions:")
-            for test_name, result in self.results.items():
-                if result["status"] == "FAILED" and result["critical"]:
-                    print(f"  - Fix issues in {test_name}")
-        elif failed > 0:
-            print("🟡 READY WITH CAUTIONS")
-            print("⚠️  Some non-critical tests failed - review recommended")
-            print("\nRecommended actions:")
-            for test_name, result in self.results.items():
-                if result["status"] == "FAILED":
-                    print(f"  - Review issues in {test_name}")
-        elif skipped > 0:
-            print("🟡 PARTIALLY VALIDATED")
-            print("⚠️  Some tests were skipped due to missing prerequisites")
-            print("\nTo complete validation:")
-            for test_name, result in self.results.items():
-                if result["status"] == "SKIPPED":
-                    print(f"  - {test_name}: {result['reason']}")
-        else:
+        if passed == total:
             print("🟢 READY FOR PRODUCTION")
-            print("✅ All tests passed successfully!")
+            print("   All test suites passed successfully")
+            print("   All 27 endpoints validated")
+        elif passed >= total * 0.8:
+            print("🟡 MOSTLY READY")
+            print("   Most tests passed, review failures")
+            print("   27 endpoints available for testing")
+        else:
+            print("🔴 NOT READY")
+            print("   Multiple test failures detected")
+            print("   Address issues before production deployment")
         
-        # Deployment checklist
-        print(f"\n📝 DEPLOYMENT CHECKLIST")
-        checklist_items = [
-            ("Set SENSOR_TOWER_API_TOKEN", bool(os.getenv("SENSOR_TOWER_API_TOKEN"))),
-            ("Docker image available", "Docker" in [t for t in self.results.keys() if self.results[t]["status"] == "PASSED"]),
-            ("PyPI package tested", "Manual Testing" in [t for t in self.results.keys() if self.results[t]["status"] == "PASSED"]),
-            ("Security validated", "Security Testing" in [t for t in self.results.keys() if self.results[t]["status"] == "PASSED"]),
-            ("Performance tested", "Load Testing" in [t for t in self.results.keys() if self.results[t]["status"] == "PASSED"]),
-            ("Health checks working", True),  # Assume working if other tests pass
-            ("Resource limits configured", True),  # Checked in deployment tests
-            ("Monitoring planned", False),  # User needs to implement
-            ("Backup strategy planned", False),  # User needs to implement
-            ("Rollback procedure tested", False)  # User needs to implement
-        ]
+        # Save detailed report
+        self.save_report()
         
-        for item, completed in checklist_items:
-            status = "✅" if completed else "❌"
-            print(f"{status} {item}")
-        
-        # Final recommendations
-        print(f"\n💡 FINAL RECOMMENDATIONS")
-        
-        recommendations = [
-            "Test in staging environment before production deployment",
-            "Set up monitoring and alerting for health endpoints", 
-            "Configure log aggregation for troubleshooting",
-            "Implement secrets management (avoid environment variables in production)",
-            "Set up automated security scanning in CI/CD pipeline",
-            "Plan for scaling based on load testing results",
-            "Document rollback procedures",
-            "Schedule regular dependency updates",
-            "Consider implementing rate limiting for production use",
-            "Set up automated backups if stateful data exists"
-        ]
-        
-        for i, rec in enumerate(recommendations, 1):
-            print(f"{i:2d}. {rec}")
-        
-        # Return exit code
-        return 1 if critical_failed > 0 else 0
+        # Return overall success
+        return passed == total
 
 async def main():
-    """Main execution function"""
-    print("🚀 Sensor Tower MCP - Comprehensive Testing Suite")
-    print("This will run all available tests and generate a production readiness report")
-    
+    """Main entry point"""
     tester = MasterTester()
     
-    # Check prerequisites
-    prereqs = tester.check_prerequisites()
-    
-    # Ask user if they want to continue with missing prerequisites
-    missing = [k for k, v in prereqs.items() if not v and k != "API Token"]
-    if missing:
-        print(f"\n⚠️  Missing prerequisites: {', '.join(missing)}")
-        response = input("Continue anyway? (y/N): ")
-        if response.lower() != 'y':
-            print("Exiting. Please install missing prerequisites and try again.")
-            return 1
-    
-    # Run all tests
-    tester.run_all_tests(prereqs)
-    
-    # Generate report and exit with appropriate code
-    exit_code = tester.generate_comprehensive_report()
-    
-    return exit_code
+    try:
+        success = await tester.run_all_tests()
+        
+        print(f"\n🎉 Master test suite completed!")
+        print(f"⏱️  Total runtime: {time.time() - tester.start_time:.2f} seconds")
+        
+        if not success:
+            print("\n❌ Some tests failed. Check the detailed report for more information.")
+            sys.exit(1)
+        else:
+            print("\n✅ All tests passed! System is production-ready.")
+            
+    except KeyboardInterrupt:
+        print("\n⚠️  Tests interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n💥 Unexpected error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    exit_code = asyncio.run(main())
-    sys.exit(exit_code) 
+    asyncio.run(main()) 

@@ -1,13 +1,38 @@
 # Sensor Tower MCP Server
 
+[![PyPI version](https://badge.fury.io/py/sensortower-mcp.svg)](https://badge.fury.io/py/sensortower-mcp)
+[![Docker Pulls](https://img.shields.io/docker/pulls/bobbysayers492/sensortower-mcp)](https://hub.docker.com/r/bobbysayers492/sensortower-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
 Model Context Protocol server for Sensor Tower APIs using FastMCP with OpenAPI integration.
+
+---
+
+## 📋 Table of Contents
+
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+  - [Docker (Recommended)](#option-1-docker-recommended)
+  - [MCP Client Integration](#option-2-mcp-client-integration)
+  - [Direct Installation](#option-3-direct-installation)
+- [Available Tools](#-available-tools)
+- [Development](#-development)
+- [API Examples](#-api-examples)
+- [Docker Deployment](#-docker-deployment)
+- [Security](#-security)
+- [Performance](#-performance)
+- [Testing](#-testing)
+- [License](#-license)
+
+---
 
 ## 📋 Prerequisites
 
 Before installing, you'll need:
 
 1. **Sensor Tower API Token**: Get your token from [Sensor Tower API Settings](https://app.sensortower.com/users/edit/api-settings)
-2. **uv** (for MCP client integrations): Install with `curl -LsSf https://astral.sh/uv/install.sh | sh` or see [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
+2. **uv** (for MCP client integrations): See [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
 
 ## 🚀 Installation
 

@@ -1079,7 +1079,7 @@ def health_check() -> Dict[str, Any]:
         "service": "Sensor Tower MCP Server", 
         "transport": args.transport,
         "api_base_url": API_BASE_URL,
-        "tools_available": 9  # 5 API tools + 4 utility tools
+        "tools_available": 29  # All available MCP tools including this health check
     }
 
 # Separate function for HTTP health endpoint (not a tool)
@@ -1090,7 +1090,7 @@ def get_health_data() -> Dict[str, Any]:
         "service": "Sensor Tower MCP Server", 
         "transport": args.transport,
         "api_base_url": API_BASE_URL,
-        "tools_available": 27  # 23 API tools + 4 utility tools
+        "tools_available": 29  # All available MCP tools including health check
     }
 
 # Add HTTP health check endpoint using custom route
@@ -1124,7 +1124,7 @@ async def main():
     print(f"🚌 Transport: {args.transport}")
     if args.transport == "http":
         print(f"🌐 Port: {args.port}")
-    print(f"🔧 Available tools: 27")  # 23 API tools + 4 utility tools
+    print(f"🔧 Available tools: 29")  # All MCP tools including health check
     
     try:
         if args.transport == "stdio":
@@ -1169,7 +1169,7 @@ def cli():
     print(f"🚌 Transport: {args.transport}")
     if args.transport == "http":
         print(f"🌐 Port: {args.port}")
-    print(f"🔧 Available tools: 27")  # 23 API tools + 4 utility tools
+    print(f"🔧 Available tools: 29")  # All MCP tools including health check
     
     try:
         if args.transport == "stdio":

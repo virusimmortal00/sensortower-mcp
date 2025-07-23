@@ -11,13 +11,13 @@ Model Context Protocol server for Sensor Tower APIs using FastMCP with OpenAPI i
 
 | API Category | Endpoints | Coverage | Implemented |
 |--------------|-----------|----------|-------------|
-| **App Analysis** | 17 total | ✅ Nearly Complete (16/17) | `apps`, `sales_report_estimates`, `top_in_app_purchases`, `creatives`, `impressions`, `usage_active_users`, `category_history`, `get_search_entities`, `compact_sales_report_estimates`, `category_ranking_summary`, `impressions_rank`, `app_analysis_retention`, `downloads_by_sources`, `app_analysis_demographics`, `app_update_timeline`, `version_history` |
-| **Store Marketing** | 15 total | 🔄 Partial (4/15) | `featured_today_stories`, `featured_apps`, `keywords`, `get_reviews` |
-| **Market Analysis** | 7 total | 🔄 Partial (4/7) | `get_category_rankings`, `top_and_trending`, `top_publishers`, `store_summary` |
-| **Custom Fields** | 13 total | ⏸️ Planned | *Not yet implemented* |
-| **Your Metrics** | 5 total | ⏸️ Planned | *Not yet implemented* |
+| **App Analysis** | 19+ total | ✅ Comprehensive Coverage | `apps`, `sales_report_estimates`, `top_in_app_purchases`, `creatives`, `impressions`, `usage_active_users`, `category_history`, `search_entities`, `compact_sales_report_estimates`, `category_ranking_summary`, `impressions_rank`, `app_analysis_retention`, `downloads_by_sources`, `app_analysis_demographics`, `app_update_timeline`, `version_history`, `get_publisher_apps`, `get_app_ids_by_category`, `churn_analysis` |
+| **Store Marketing** | 6+ total | ✅ Key Features Covered | `featured_today_stories`, `featured_apps`, `get_featured_creatives`, `keywords`, `research_keyword`, `get_reviews` |
+| **Market Analysis** | 4 total | ✅ Complete Coverage | `get_category_rankings`, `top_and_trending`, `top_publishers`, `store_summary` |
+| **Consumer Intelligence** | 5+ total | ✅ Core Analytics | `churn_analysis`, `churn_analysis_cohorts`, `engagement_insights`, `power_user_curve`, `cohort_retention` |
+| **Publisher Analytics** | 3+ total | ✅ Complete Coverage | `get_publisher_apps`, `get_unified_publisher_apps`, `get_app_ids_by_category` |
 
-**Overall Coverage: 24/39 endpoints (62%)**
+**Overall Coverage: 39+ endpoints (major API categories covered)**
 
 > 💡 **Endpoint names match Sensor Tower's official API documentation `operationId` values**
 

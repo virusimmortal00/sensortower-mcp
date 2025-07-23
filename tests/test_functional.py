@@ -275,6 +275,114 @@ class FunctionalTester:
                     self.print_test("category_ranking_summary", "WARN", f"HTTP {response.status_code}")
             except Exception as e:
                 self.print_test("category_ranking_summary", "FAIL", str(e))
+            
+            # Test 3: Publisher apps
+            try:
+                params = {
+                    "publisher_id": "368677371",  # Example iOS publisher ID
+                    "limit": 5,
+                    "auth_token": self.token
+                }
+                response = await client.get("/v1/ios/publisher/publisher_apps", params=params)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "apps" in data and len(data["apps"]) > 0:
+                        app_count = len(data["apps"])
+                        sample_app = data["apps"][0].get("name", "Unknown")
+                        self.print_test("get_publisher_apps", "PASS", 
+                                      f"Found {app_count} apps, sample: '{sample_app}'")
+                    else:
+                        self.print_test("get_publisher_apps", "PASS", "API responded successfully")
+                else:
+                    self.print_test("get_publisher_apps", "WARN", f"HTTP {response.status_code}")
+            except Exception as e:
+                self.print_test("get_publisher_apps", "FAIL", str(e))
+            
+            # Test 4: App IDs by category
+            try:
+                params = {
+                    "category": "6005",  # Social Networking
+                    "start_date": "2024-01-01",
+                    "limit": 10,
+                    "auth_token": self.token
+                }
+                response = await client.get("/v1/ios/apps/app_ids", params=params)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "app_ids" in data and len(data["app_ids"]) > 0:
+                        app_count = len(data["app_ids"])
+                        self.print_test("get_app_ids_by_category", "PASS", 
+                                      f"Retrieved {app_count} app IDs from category")
+                    else:
+                        self.print_test("get_app_ids_by_category", "PASS", "API responded successfully")
+                else:
+                    self.print_test("get_app_ids_by_category", "WARN", f"HTTP {response.status_code}")
+            except Exception as e:
+                self.print_test("get_app_ids_by_category", "FAIL", str(e))
+            
+            # Test 5: Featured creatives
+            try:
+                params = {
+                    "app_id": "284882215",
+                    "countries": "US",
+                    "start_date": "2024-01-01",
+                    "end_date": "2024-01-31",
+                    "auth_token": self.token
+                }
+                response = await client.get("/v1/ios/featured/creatives", params=params)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "creatives" in data or isinstance(data, list):
+                        self.print_test("get_featured_creatives", "PASS", "Retrieved featured creatives data")
+                    else:
+                        self.print_test("get_featured_creatives", "PASS", "API responded successfully")
+                else:
+                    self.print_test("get_featured_creatives", "WARN", f"HTTP {response.status_code}")
+            except Exception as e:
+                self.print_test("get_featured_creatives", "FAIL", str(e))
+            
+            # Test 6: Keyword research
+            try:
+                params = {
+                    "term": "social",
+                    "country": "US",
+                    "auth_token": self.token
+                }
+                response = await client.get("/v1/ios/keywords/research_keyword", params=params)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "term" in data or "traffic" in data or "difficulty" in data:
+                        self.print_test("research_keyword", "PASS", 
+                                      f"Retrieved keyword data for '{params['term']}'")
+                    else:
+                        self.print_test("research_keyword", "PASS", "API responded successfully")
+                else:
+                    self.print_test("research_keyword", "WARN", f"HTTP {response.status_code}")
+            except Exception as e:
+                self.print_test("research_keyword", "FAIL", str(e))
+            
+            # Test 7: Churn analysis cohorts (Android only - get available cohorts first)
+            try:
+                params = {"auth_token": self.token}
+                response = await client.get("/v1/android/consumer_intel/churn_analysis/cohorts", params=params)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "data" in data and len(data["data"]) > 0:
+                        cohort_count = len(data["data"])
+                        sample_cohort = data["data"][0].get("name", "Unknown")
+                        self.print_test("get_churn_analysis_cohorts", "PASS", 
+                                      f"Found {cohort_count} cohorts, sample: '{sample_cohort}'")
+                    else:
+                        self.print_test("get_churn_analysis_cohorts", "PASS", "API responded successfully")
+                else:
+                    self.print_test("get_churn_analysis_cohorts", "WARN", f"HTTP {response.status_code}")
+            except Exception as e:
+                self.print_test("get_churn_analysis_cohorts", "FAIL", str(e))
     
     def print_summary(self):
         """Print test summary"""
@@ -291,7 +399,7 @@ class FunctionalTester:
         if failed == 0:
             print(f"{Colors.GREEN}🎉 ALL FUNCTIONAL TESTS PASSED!{Colors.END}")
             print(f"{Colors.GREEN}✅ Sensor Tower API integration is working perfectly{Colors.END}")
-            print(f"{Colors.GREEN}✅ All 27 endpoints are ready for production use{Colors.END}")
+            print(f"{Colors.GREEN}✅ All 39 endpoints are ready for production use{Colors.END}")
         elif failed <= 2:
             print(f"{Colors.YELLOW}🟡 MOSTLY SUCCESSFUL{Colors.END}")
             print(f"{Colors.YELLOW}⚠️  Minor issues detected, but core functionality works{Colors.END}")

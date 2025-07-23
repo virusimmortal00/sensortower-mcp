@@ -5,19 +5,20 @@ This package contains comprehensive testing scripts for validating the
 sensortower-mcp PyPI package and Docker image for production readiness.
 
 🎯 COMPREHENSIVE ENDPOINT TESTING
-Tests all 27 endpoints (23 API + 4 utility) across all major categories:
+Tests all 39 endpoints (34 API + 5 utility) across all major categories:
 
 Endpoint Coverage:
-- 4 Utility endpoints: country codes, categories, chart types, health check
-- 16 App Analysis endpoints: metadata, sales estimates, retention, demographics, creatives, impressions, etc.
-- 4 Store Marketing endpoints: featured apps, keywords, reviews, today stories  
+- 5 Utility endpoints: country codes, categories, chart types, health check
+- 19 App Analysis endpoints: metadata, sales estimates, retention, demographics, creatives, impressions, publisher apps, etc.
+- 6 Store Marketing endpoints: featured apps, keywords, reviews, today stories, featured creatives, keyword research
 - 4 Market Analysis endpoints: rankings, trends, publishers, store summary
+- 5 Consumer Intelligence endpoints: churn analysis, engagement insights, power user curve, cohort retention
 
 Test Scripts:
 - test_functional.py: Real API testing with actual data responses from Sensor Tower
 - test_all.py: Master script that runs all tests and generates production readiness report
 - test_deployment.py: Comprehensive PyPI package and Docker image testing with full endpoint coverage
-- test_manual.py: Quick manual validation testing all 27 endpoints
+- test_manual.py: Quick manual validation testing all 39 endpoints
 - test_load.py: Performance testing under concurrent load across all endpoint categories
 - test_security.py: Security audit and vulnerability scanning for all endpoints
 
@@ -25,20 +26,20 @@ Usage:
     # Test real API functionality (recommended first)
     python tests/test_functional.py
     
-    # Run comprehensive testing (all 27 endpoints)
+    # Run comprehensive testing (all 39 endpoints)
     python tests/test_all.py
     
-    # Quick validation (all 27 endpoints)
+    # Quick validation (all 39 endpoints)
     python tests/test_manual.py
     
-    # Full deployment testing (all 27 endpoints)
+    # Full deployment testing (all 39 endpoints)
     python tests/test_deployment.py
 
 Prerequisites:
     pip install httpx aiohttp python-dotenv
     
 Environment Variables:
-    SENSOR_TOWER_API_TOKEN: Your Sensor Tower API token (required for full 27 endpoint testing)
+    SENSOR_TOWER_API_TOKEN: Your Sensor Tower API token (required for full 39 endpoint testing)
     
     Configuration Options:
     1. .env file (recommended for development):

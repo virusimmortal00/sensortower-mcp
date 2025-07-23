@@ -306,7 +306,7 @@ async def test_docker_local():
 async def main():
     print("🧪 Sensor Tower MCP Comprehensive Testing")
     print("=" * 50)
-    print("Testing all 27 endpoints (23 API + 4 utility)")
+    print("Testing all 39 endpoints (34 API + 5 utility)")
     
     # Check environment
     token = os.getenv("SENSOR_TOWER_API_TOKEN")

@@ -2,7 +2,7 @@
 """
 Master test script for sensortower-mcp - runs all testing suites.
 Use this to get a comprehensive production readiness assessment.
-Tests all 27 endpoints (23 API + 4 utility) for complete coverage.
+Tests all 39 endpoints (34 API + 5 utility) for complete coverage.
 """
 
 import asyncio
@@ -46,12 +46,13 @@ class MasterTester:
         print("┌─────────────────────────────────────────────┬─────────┐")
         print("│ Category                                    │ Count   │")
         print("├─────────────────────────────────────────────┼─────────┤")
-        print("│ Utility Endpoints                           │   4     │")
-        print("│ App Analysis Endpoints                      │  16     │")
-        print("│ Store Marketing Endpoints                   │   4     │")
+        print("│ Utility Endpoints                           │   5     │")
+        print("│ App Analysis Endpoints                      │  19     │")
+        print("│ Store Marketing Endpoints                   │   6     │")
         print("│ Market Analysis Endpoints                   │   4     │")
+        print("│ Consumer Intelligence Endpoints             │   5     │")
         print("├─────────────────────────────────────────────┼─────────┤")
-        print("│ Total Endpoints Tested                      │  27     │")
+        print("│ Total Endpoints Tested                      │  39     │")
         print("└─────────────────────────────────────────────┴─────────┘")
     
     def run_script(self, script_name: str, description: str) -> Tuple[bool, str]:
@@ -118,7 +119,7 @@ class MasterTester:
     async def run_all_tests(self):
         """Run all test suites"""
         self.print_header("Sensor Tower MCP - Master Test Suite")
-        print("🎯 Comprehensive testing of all 27 endpoints")
+        print("🎯 Comprehensive testing of all 39 endpoints")
         
         self.print_endpoint_summary()
         

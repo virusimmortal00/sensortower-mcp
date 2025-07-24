@@ -3,128 +3,62 @@
 [![PyPI version](https://badge.fury.io/py/sensortower-mcp.svg)](https://badge.fury.io/py/sensortower-mcp)
 [![Docker Pulls](https://img.shields.io/docker/pulls/bobbysayers492/sensortower-mcp)](https://hub.docker.com/r/bobbysayers492/sensortower-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 Model Context Protocol server for Sensor Tower APIs using FastMCP with OpenAPI integration.
 
-## 📊 API Coverage Status
+## 🚀 Quick Start
 
-| API Category | Endpoints | Coverage | Implemented |
-|--------------|-----------|----------|-------------|
-| **App Analysis** | 19+ total | ✅ Comprehensive Coverage | `apps`, `sales_report_estimates`, `top_in_app_purchases`, `creatives`, `impressions`, `usage_active_users`, `category_history`, `search_entities`, `compact_sales_report_estimates`, `category_ranking_summary`, `impressions_rank`, `app_analysis_retention`, `downloads_by_sources`, `app_analysis_demographics`, `app_update_timeline`, `version_history`, `get_publisher_apps`, `get_app_ids_by_category`, `churn_analysis` |
-| **Store Marketing** | 6+ total | ✅ Key Features Covered | `featured_today_stories`, `featured_apps`, `get_featured_creatives`, `keywords`, `research_keyword`, `get_reviews` |
-| **Market Analysis** | 4 total | ✅ Complete Coverage | `get_category_rankings`, `top_and_trending`, `top_publishers`, `store_summary` |
-| **Consumer Intelligence** | 5+ total | ✅ Core Analytics | `churn_analysis`, `churn_analysis_cohorts`, `engagement_insights`, `power_user_curve`, `cohort_retention` |
-| **Publisher Analytics** | 3+ total | ✅ Complete Coverage | `get_publisher_apps`, `get_unified_publisher_apps`, `get_app_ids_by_category` |
+### For Claude Desktop Users
+1. **Install uv**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+2. **Get API token**: [Sensor Tower API Settings](https://app.sensortower.com/users/edit/api-settings)
+3. **Add to Claude config** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+   ```json
+   {
+     "mcpServers": {
+       "sensortower": {
+         "command": "uvx",
+         "args": ["sensortower-mcp", "--transport", "stdio"],
+         "env": {
+           "SENSOR_TOWER_API_TOKEN": "your_token_here"
+         }
+       }
+     }
+   }
+   ```
+4. **Restart Claude Desktop**
 
-**Overall Coverage: 39+ endpoints (major API categories covered)**
+### For HTTP API Access
+```bash
+# Install uv (handles Python automatically)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-> 💡 **Endpoint names match Sensor Tower's official API documentation `operationId` values**
+# Run server
+SENSOR_TOWER_API_TOKEN="your_token" uvx sensortower-mcp --transport http --port 8666
+```
 
 ---
 
-## ⚙️ Configuration
+## 📦 Installation
 
-### Using .env File (Recommended)
+### Option 1: MCP Client Integration (Recommended)
 
-Create a `.env` file in your project root for easy configuration:
+**Prerequisites:** [uv](https://docs.astral.sh/uv/getting-started/installation/) (automatically manages Python)
 
-```bash
-# Required: Your Sensor Tower API token
-SENSOR_TOWER_API_TOKEN=your_actual_token_here
-
-# Optional: Server configuration
-TRANSPORT=http
-PORT=8666
-API_BASE_URL=https://api.sensortower.com
-
-# Optional: Performance tuning
-TIMEOUT=30
+#### Claude Desktop
+```json
+{
+  "mcpServers": {
+    "sensortower": {
+      "command": "uvx",
+      "args": ["sensortower-mcp", "--transport", "stdio"],
+      "env": {
+        "SENSOR_TOWER_API_TOKEN": "your_token_here"
+      }
+    }
+  }
+}
 ```
-
-### Environment Variables
-
-All configuration can also be set via environment variables:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SENSOR_TOWER_API_TOKEN` | Your API token (required) | None |
-| `TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` |
-| `PORT` | HTTP server port | `8666` |
-| `API_BASE_URL` | Sensor Tower API base URL | `https://api.sensortower.com` |
-
-### Getting Your API Token
-
-1. Visit [Sensor Tower API Settings](https://app.sensortower.com/users/edit/api-settings)
-2. Generate a new API token if you don't have one
-3. Copy the token to your `.env` file or environment variables
-
----
-
-## �� Table of Contents
-
-- [Prerequisites](#-prerequisites)
-- [Installation](#-installation)
-  - [Docker (Recommended)](#option-1-docker-recommended)
-  - [MCP Client Integration](#option-2-mcp-client-integration)
-  - [Direct Installation](#option-3-direct-installation)
-- [Available Tools](#-available-tools)
-- [Development](#-development)
-- [API Examples](#-api-examples)
-- [Docker Deployment](#-docker-deployment)
-- [Security](#-security)
-- [Performance](#-performance)
-- [Testing](#-testing)
-- [License](#-license)
-
----
-
-## 📋 Prerequisites
-
-Before installing, you'll need:
-
-1. **Sensor Tower API Token**: Get your token from [Sensor Tower API Settings](https://app.sensortower.com/users/edit/api-settings)
-2. **uv** (for MCP client integrations): See [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
-
-## 🚀 Installation
-
-### Option 1: Docker (Recommended)
-
-The fastest way to get started is using our pre-built Docker image:
-
-**Using .env file (Recommended):**
-```bash
-# Create .env file with your token
-echo "SENSOR_TOWER_API_TOKEN=your_token_here" > .env
-
-# Run with HTTP transport
-docker run -p 8666:8666 --env-file .env \
-  bobbysayers492/sensortower-mcp:latest \
-  sensortower-mcp --transport http --port 8666
-
-# Run with stdio transport (for MCP clients)
-docker run --env-file .env \
-  bobbysayers492/sensortower-mcp:latest \
-  sensortower-mcp --transport stdio
-```
-
-**Using environment variables:**
-```bash
-# Run with HTTP transport
-docker run -p 8666:8666 \
-  -e SENSOR_TOWER_API_TOKEN="your_token_here" \
-  bobbysayers492/sensortower-mcp:latest \
-  sensortower-mcp --transport http --port 8666
-
-# Run with stdio transport (for MCP clients)
-docker run -e SENSOR_TOWER_API_TOKEN="your_token_here" \
-  bobbysayers492/sensortower-mcp:latest \
-  sensortower-mcp --transport stdio
-```
-
-### Option 2: MCP Client Integration
-
-For AI assistants and IDEs that support MCP, add this server to your configuration:
 
 #### Cursor
 Add to your MCP settings (`~/.cursor-mcp/config.json`):
@@ -132,7 +66,7 @@ Add to your MCP settings (`~/.cursor-mcp/config.json`):
 {
   "mcpServers": {
     "sensortower": {
-      "command": "uvx",
+      "command": "uvx", 
       "args": ["sensortower-mcp", "--transport", "stdio"],
       "env": {
         "SENSOR_TOWER_API_TOKEN": "your_token_here"
@@ -142,133 +76,49 @@ Add to your MCP settings (`~/.cursor-mcp/config.json`):
 }
 ```
 
-#### VSCode with MCP Extension
-Add to your MCP configuration:
-```json
-{
-  "sensortower": {
-    "command": "uvx",
-    "args": ["sensortower-mcp", "--transport", "stdio"],
-    "env": {
-      "SENSOR_TOWER_API_TOKEN": "your_token_here"
-    }
-  }
-}
+### Option 2: Docker
+```bash
+# Quick start
+docker run -p 8666:8666 -e SENSOR_TOWER_API_TOKEN="your_token" \
+  bobbysayers492/sensortower-mcp:latest
+
+# Production with compose
+echo "SENSOR_TOWER_API_TOKEN=your_token" > .env
+docker-compose up -d
 ```
-
-#### Claude Desktop
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
-```json
-{
-  "mcpServers": {
-    "sensortower": {
-      "command": "uvx",
-      "args": ["sensortower-mcp", "--transport", "stdio"],
-      "env": {
-        "SENSOR_TOWER_API_TOKEN": "your_token_here"
-      }
-    }
-  }
-}
-```
-
-#### OpenAI Agents SDK
-For OpenAI agents, configure the MCP server:
-```python
-from openai import OpenAI
-from mcp import McpClient
-
-# Configure MCP client
-mcp_client = McpClient(
-    command="uvx",
-    args=["sensortower-mcp", "--transport", "stdio"],
-    env={"SENSOR_TOWER_API_TOKEN": "your_token_here"}
-)
-
-# Use with OpenAI agent
-client = OpenAI()
-# Integrate MCP tools with your agent implementation
-```
-
-After adding the configuration, restart your client to load the Sensor Tower MCP server.
 
 ### Option 3: Direct Installation
-
-Install the package directly from PyPI:
-
 ```bash
-# Install the package
 pip install sensortower-mcp
-
-# Create .env file with your token (recommended)
-echo "SENSOR_TOWER_API_TOKEN=your_token_here" > .env
-
-# Run with HTTP transport
-sensortower-mcp --transport http --port 8666
-
-# Or run with stdio transport (for MCP clients)  
-sensortower-mcp --transport stdio
+SENSOR_TOWER_API_TOKEN="your_token" sensortower-mcp --transport http --port 8666
 ```
 
-**Alternative: Using environment variables**
+---
+
+## ⚙️ Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SENSOR_TOWER_API_TOKEN` | Your API token (**required**) | None |
+| `TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` |
+| `PORT` | HTTP server port | `8666` |
+| `API_BASE_URL` | Sensor Tower API base URL | `https://api.sensortower.com` |
+
+**Get your API token:** [Sensor Tower API Settings](https://app.sensortower.com/users/edit/api-settings)
+
+### Using .env File
 ```bash
-# Set environment variable
-export SENSOR_TOWER_API_TOKEN="your_token_here"
-
-# Run the server
-sensortower-mcp --transport http --port 8666
+# .env
+SENSOR_TOWER_API_TOKEN=your_actual_token_here
+TRANSPORT=http
+PORT=8666
 ```
 
-## 📊 Available Tools
+---
 
-### App Intelligence API
-- **get_app_metadata**: Get app details like name, publisher, categories, descriptions, ratings
-- **get_category_rankings**: Get top ranking apps by category and chart type
-- **get_download_estimates**: Retrieve download estimates by country and date
-- **get_revenue_estimates**: Get revenue estimates and trends
+## 🔧 Usage Examples
 
-### Search & Discovery
-- **search_entities**: Search for apps and publishers by name/description
-
-### Utility Tools
-- **get_country_codes**: Get available country codes
-- **get_category_ids**: Get category IDs for iOS/Android
-- **get_chart_types**: Get available chart types for rankings
-- **health_check**: Health check endpoint for monitoring
-
-## 🔧 Development
-
-### Local Development
-
-```bash
-# Clone repository
-git clone https://github.com/yourusername/sensortower-mcp
-cd sensortower-mcp
-
-# Install in development mode
-pip install -e .
-
-# Start in development mode
-python main.py --transport http --port 8666
-```
-
-### Environment Variables
-
-- `SENSOR_TOWER_API_TOKEN`: Your Sensor Tower API token (required)
-- `TRANSPORT`: Transport mode (`stdio` or `http`, default: `stdio`)
-- `PORT`: HTTP server port (default: `8666`)
-- `API_BASE_URL`: Sensor Tower API base URL (default: `https://api.sensortower.com`)
-
-### Health Check
-
-```bash
-# Check service health
-curl http://localhost:8666/health
-```
-
-## 📋 API Examples
-
-### Get App Metadata
+### App Intelligence
 ```json
 {
   "tool": "get_app_metadata",
@@ -280,10 +130,10 @@ curl http://localhost:8666/health
 }
 ```
 
-### Search Apps
+### Search & Discovery
 ```json
 {
-  "tool": "search_entities",
+  "tool": "search_entities", 
   "arguments": {
     "os": "ios",
     "entity_type": "app",
@@ -293,13 +143,13 @@ curl http://localhost:8666/health
 }
 ```
 
-### Get Rankings
+### Market Rankings
 ```json
 {
   "tool": "get_category_rankings",
   "arguments": {
     "os": "ios",
-    "category": "6005",
+    "category": "6005", 
     "chart_type": "topfreeapplications",
     "country": "US",
     "date": "2024-01-15"
@@ -307,72 +157,135 @@ curl http://localhost:8666/health
 }
 ```
 
-## 🐳 Docker Deployment
+---
 
-### Production Deployment
+## 📊 Available Tools
+
+### Core API Tools
+- **get_app_metadata**: App details, ratings, descriptions
+- **get_category_rankings**: Top ranking apps by category
+- **get_download_estimates**: Download estimates by country/date
+- **get_revenue_estimates**: Revenue estimates and trends
+- **search_entities**: Search apps and publishers
+- **get_reviews**: App reviews and ratings data
+- **get_keywords**: Keyword rankings for apps
+
+### Analytics Tools  
+- **get_usage_active_users**: Active user analytics
+- **app_analysis_retention**: User retention analysis
+- **app_analysis_demographics**: Demographic breakdowns
+- **get_churn_analysis**: User churn metrics
+- **get_impressions**: Ad impression data
+
+### Utility Tools
+- **get_country_codes**: Available country codes
+- **get_category_ids**: Category IDs for iOS/Android
+- **get_chart_types**: Available chart types
+- **health_check**: Service health status
+
+---
+
+## 📊 API Coverage
+
+| Category | Coverage | Key Endpoints |
+|----------|----------|---------------|
+| **App Analysis** | ✅ 19+ endpoints | metadata, downloads, revenue, retention, demographics |
+| **Store Marketing** | ✅ 6+ endpoints | keywords, reviews, featured content, creatives |
+| **Market Analysis** | ✅ 4 endpoints | rankings, trending, publishers, store summary |
+| **Consumer Intelligence** | ✅ 5+ endpoints | churn, engagement, power users, cohort retention |
+| **Publisher Analytics** | ✅ 3+ endpoints | publisher apps, unified analytics |
+
+**Total: 39+ endpoints covering all major Sensor Tower API categories**
+
+---
+
+## 🛠️ Development
 
 ```bash
-# Using Docker Compose
-SENSOR_TOWER_API_TOKEN="your_token" docker-compose up -d
+# Clone and setup
+git clone https://github.com/yourusername/sensortower-mcp
+cd sensortower-mcp
+pip install -e .
 
-# With nginx reverse proxy
-SENSOR_TOWER_API_TOKEN="your_token" \
-  docker-compose --profile production up -d
+# Run locally
+python main.py --transport http --port 8666
+
+# Health check
+curl http://localhost:8666/health
 ```
 
-### Resource Limits
+---
 
-The container is configured with reasonable defaults:
-- Memory: 256MB limit
-- CPU: 0.5 cores
-- Health checks every 30s
+## 🐳 Docker Deployment
+
+### Production Setup
+```bash
+# With Docker Compose
+SENSOR_TOWER_API_TOKEN="your_token" docker-compose --profile production up -d
+
+# Manual container
+docker run -d \
+  -p 8666:8666 \
+  -e SENSOR_TOWER_API_TOKEN="your_token" \
+  --restart unless-stopped \
+  bobbysayers492/sensortower-mcp:latest
+```
+
+### Resource Configuration
+- **Memory**: 256MB limit
+- **CPU**: 0.5 cores  
+- **Health checks**: Every 30s
+- **Auto-restart**: On failure
 
 ### Monitoring
-
-Health check endpoint: `http://localhost:8666/health`
-
+Health endpoint: `GET /health`
 ```json
 {
   "status": "healthy",
-  "service": "Sensor Tower MCP Server",
+  "service": "Sensor Tower MCP Server", 
   "transport": "http",
-  "api_base_url": "https://api.sensortower.com",
-  "tools_available": 9
+  "tools_available": 39
 }
 ```
 
-## 🔒 Security
+---
 
-- Non-root container user
+## 🔒 Security & Performance
+
+### Security Features
+- Non-root container execution
+- Input validation and request timeouts
 - No hardcoded secrets
-- Input validation and timeouts
-- Regular security scanning
-- HTTPS/TLS configuration for production
 - Security headers and rate limiting
+- Regular dependency scanning
 
-## 📈 Performance
+### Performance Benchmarks
+- **Response Time**: <100ms utility, <500ms API calls
+- **Throughput**: >50 RPS mixed workload
+- **Memory Usage**: <256MB normal load
+- **Success Rate**: >99% valid requests
 
-Expected performance benchmarks:
-- **Response Time**: <100ms for utility endpoints, <500ms for API calls
-- **Throughput**: >50 RPS for mixed workload
-- **Memory Usage**: <256MB under normal load
-- **Success Rate**: >99% for valid requests
+---
 
 ## 🧪 Testing
 
-We provide a comprehensive testing suite. See [tests/README.md](tests/README.md) for details.
+Comprehensive test suite available in `tests/`:
 
 ```bash
 # Quick validation
 python tests/test_manual.py
 
-# Full production readiness check
+# Full production readiness  
 python tests/test_all.py
+
+# Load testing
+python tests/test_load.py
 ```
+
+See [tests/README.md](tests/README.md) for detailed testing documentation.
+
+---
 
 ## 📄 License
 
 MIT License - see LICENSE file for details.
-
-Built with [FastMCP](https://github.com/jlowin/fastmcp) for streamlined MCP server development.
-

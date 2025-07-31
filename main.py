@@ -146,7 +146,8 @@ def get_impressions(
             "date_granularity": date_granularity,
             "auth_token": get_auth_token()
         }
-        response = await sensor_tower_client.get(f"/v1/{os}/ad_intel/impressions", params=params)
+        # Fixed: Use correct network_analysis endpoint instead of impressions
+        response = await sensor_tower_client.get(f"/v1/{os}/ad_intel/network_analysis", params=params)
         response.raise_for_status()
         return response.json()
     
@@ -448,145 +449,6 @@ def version_history(
     
     return asyncio.create_task(_get_data())
 
-# Consumer Intelligence API endpoints
-@mcp.tool
-def get_churn_analysis(
-    os: str,
-    selection_cohort_ids: str,
-    granularity: str,
-    start_date: str,
-    end_date: str,
-    country: str = None
-) -> Dict[str, Any]:
-    """Fetch app churn rate as well as active user breakdown metrics (percentage of new, resurrected, and retained users)."""
-    import asyncio
-    if not sensor_tower_client:
-        raise ValueError("Sensor Tower client not initialized")
-    
-    async def _get_data():
-        params = {
-            "selection_cohort_ids": selection_cohort_ids,
-            "granularity": granularity,
-            "start_date": start_date,
-            "end_date": end_date,
-            "auth_token": get_auth_token()
-        }
-        if country:
-            params["country"] = country
-        
-        response = await sensor_tower_client.get(f"/v1/{os}/consumer_intel/churn_analysis", params=params)
-        response.raise_for_status()
-        return response.json()
-    
-    return asyncio.create_task(_get_data())
-
-@mcp.tool
-def get_churn_analysis_cohorts(
-    os: str
-) -> Dict[str, Any]:
-    """Fetch the available cohorts for churn analysis."""
-    import asyncio
-    if not sensor_tower_client:
-        raise ValueError("Sensor Tower client not initialized")
-    
-    async def _get_data():
-        params = {"auth_token": get_auth_token()}
-        response = await sensor_tower_client.get(f"/v1/{os}/consumer_intel/churn_analysis/cohorts", params=params)
-        response.raise_for_status()
-        return response.json()
-    
-    return asyncio.create_task(_get_data())
-
-@mcp.tool
-def get_engagement_insights(
-    os: str,
-    selection_cohort_ids: str,
-    granularity: str,
-    start_date: str,
-    end_date: str,
-    country: str = None
-) -> Dict[str, Any]:
-    """Fetch app engagement trends from a specific subset of panel users."""
-    import asyncio
-    if not sensor_tower_client:
-        raise ValueError("Sensor Tower client not initialized")
-    
-    async def _get_data():
-        params = {
-            "selection_cohort_ids": selection_cohort_ids,
-            "granularity": granularity,
-            "start_date": start_date,
-            "end_date": end_date,
-            "auth_token": get_auth_token()
-        }
-        if country:
-            params["country"] = country
-        
-        response = await sensor_tower_client.get(f"/v1/{os}/consumer_intel/engagement_insights", params=params)
-        response.raise_for_status()
-        return response.json()
-    
-    return asyncio.create_task(_get_data())
-
-@mcp.tool
-def get_power_user_curve(
-    os: str,
-    selection_cohort_ids: str,
-    granularity: str,
-    start_date: str,
-    end_date: str,
-    country: str = None
-) -> Dict[str, Any]:
-    """Fetch the power user curve from a specific subset of panel users."""
-    import asyncio
-    if not sensor_tower_client:
-        raise ValueError("Sensor Tower client not initialized")
-    
-    async def _get_data():
-        params = {
-            "selection_cohort_ids": selection_cohort_ids,
-            "granularity": granularity,
-            "start_date": start_date,
-            "end_date": end_date,
-            "auth_token": get_auth_token()
-        }
-        if country:
-            params["country"] = country
-        
-        response = await sensor_tower_client.get(f"/v1/{os}/consumer_intel/power_user_curve", params=params)
-        response.raise_for_status()
-        return response.json()
-    
-    return asyncio.create_task(_get_data())
-
-@mcp.tool
-def get_cohort_retention(
-    os: str,
-    selection_cohort_ids: str,
-    start_date: str,
-    end_date: str,
-    country: str = None
-) -> Dict[str, Any]:
-    """Fetch the cohort retention from a specific subset of panel users."""
-    import asyncio
-    if not sensor_tower_client:
-        raise ValueError("Sensor Tower client not initialized")
-    
-    async def _get_data():
-        params = {
-            "selection_cohort_ids": selection_cohort_ids,
-            "start_date": start_date,
-            "end_date": end_date,
-            "auth_token": get_auth_token()
-        }
-        if country:
-            params["country"] = country
-        
-        response = await sensor_tower_client.get(f"/v1/{os}/consumer_intel/cohort_retention", params=params)
-        response.raise_for_status()
-        return response.json()
-    
-    return asyncio.create_task(_get_data())
 
 # Store Marketing API endpoints  
 @mcp.tool
@@ -924,7 +786,8 @@ def get_download_estimates(
         if end_date:
             params["end_date"] = end_date
         
-        response = await sensor_tower_client.get(f"/v1/{os}/downloads", params=params)
+        # Fixed: Use correct sales_report_estimates endpoint instead of downloads
+        response = await sensor_tower_client.get(f"/v1/{os}/sales_report_estimates", params=params)
         response.raise_for_status()
         return response.json()
     
@@ -952,7 +815,8 @@ def get_revenue_estimates(
         if end_date:
             params["end_date"] = end_date
         
-        response = await sensor_tower_client.get(f"/v1/{os}/revenue", params=params)
+        # Fixed: Use correct sales_report_estimates endpoint instead of revenue  
+        response = await sensor_tower_client.get(f"/v1/{os}/sales_report_estimates", params=params)
         response.raise_for_status()
         return response.json()
     
@@ -979,7 +843,20 @@ def search_entities(
         }
         response = await sensor_tower_client.get(f"/v1/{os}/search_entities", params=params)
         response.raise_for_status()
-        return response.json()
+        raw_data = response.json()
+        
+        # Wrap raw list response in dictionary structure for MCP compliance
+        if isinstance(raw_data, list):
+            return {
+                f"{entity_type}s": raw_data,
+                "total_count": len(raw_data),
+                "query_term": term,
+                "entity_type": entity_type,
+                "platform": os
+            }
+        else:
+            # In case API already returns dictionary structure
+            return raw_data
     
     return asyncio.create_task(_get_data())
 
@@ -1204,12 +1081,7 @@ def api_documentation() -> str:
     - **get_top_publishers**: Get top publishers by category and metric
     - **get_store_summary**: Get app store summary statistics
     
-    ### Consumer Intelligence API (5 endpoints)
-    - **get_churn_analysis**: Get app churn rate and active user breakdown metrics
-    - **get_churn_analysis_cohorts**: Get available cohorts for churn analysis
-    - **get_engagement_insights**: Get app engagement trends from panel users
-    - **get_power_user_curve**: Get power user curve data from panel users
-    - **get_cohort_retention**: Get cohort retention data from panel users
+
     
     ### Utility Tools
     - **get_country_codes**: Get available country codes
@@ -1252,13 +1124,7 @@ def api_documentation() -> str:
     # Research a keyword
     research_keyword(os="ios", term="fitness", country="US")
     
-    # Get churn analysis (Android only)
-    get_churn_analysis(os="android", selection_cohort_ids="cohort_85b0b0a055f66ee9d9461187", 
-                      granularity="monthly", start_date="2024-01-01", end_date="2024-01-31")
-    
-    # Get engagement insights 
-    get_engagement_insights(os="android", selection_cohort_ids="cohort_85b0b0a055f66ee9d9461187", 
-                           granularity="monthly", start_date="2024-01-01", end_date="2024-01-31")
+
     ```
     """
 
@@ -1395,7 +1261,7 @@ def health_check() -> Dict[str, Any]:
         "service": "Sensor Tower MCP Server", 
         "transport": args.transport,
         "api_base_url": API_BASE_URL,
-        "tools_available": 39  # All available MCP tools including this health check
+        "tools_available": 34  # All available MCP tools including this health check
     }
 
 # Separate function for HTTP health endpoint (not a tool)
@@ -1406,7 +1272,7 @@ def get_health_data() -> Dict[str, Any]:
         "service": "Sensor Tower MCP Server", 
         "transport": args.transport,
         "api_base_url": API_BASE_URL,
-        "tools_available": 39  # All available MCP tools including health check
+        "tools_available": 34  # All available MCP tools including health check
     }
 
 # Add HTTP health check endpoint using custom route
@@ -1440,7 +1306,7 @@ async def main():
     print(f"🚌 Transport: {args.transport}")
     if args.transport == "http":
         print(f"🌐 Port: {args.port}")
-    print(f"🔧 Available tools: 39")  # All MCP tools including health check
+    print(f"🔧 Available tools: 34")  # All MCP tools including health check
     
     try:
         if args.transport == "stdio":

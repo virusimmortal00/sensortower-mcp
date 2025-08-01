@@ -823,42 +823,38 @@ def get_revenue_estimates(
     return asyncio.create_task(_get_data())
 
 @mcp.tool
-def search_entities(
+async def search_entities(
     os: str,
     entity_type: str,
     term: str,
     limit: int = 100
 ) -> Dict[str, Any]:
     """Search for apps and publishers by name, description, or other metadata."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
-    async def _get_data():
-        params = {
-            "entity_type": entity_type,
-            "term": term,
-            "limit": limit,
-            "auth_token": get_auth_token()
-        }
-        response = await sensor_tower_client.get(f"/v1/{os}/search_entities", params=params)
-        response.raise_for_status()
-        raw_data = response.json()
-        
-        # Wrap raw list response in dictionary structure for MCP compliance
-        if isinstance(raw_data, list):
-            return {
-                f"{entity_type}s": raw_data,
-                "total_count": len(raw_data),
-                "query_term": term,
-                "entity_type": entity_type,
-                "platform": os
-            }
-        else:
-            # In case API already returns dictionary structure
-            return raw_data
+    params = {
+        "entity_type": entity_type,
+        "term": term,
+        "limit": limit,
+        "auth_token": get_auth_token()
+    }
+    response = await sensor_tower_client.get(f"/v1/{os}/search_entities", params=params)
+    response.raise_for_status()
+    raw_data = response.json()
     
-    return asyncio.create_task(_get_data())
+    # Wrap raw list response in dictionary structure for MCP compliance
+    if isinstance(raw_data, list):
+        return {
+            f"{entity_type}s": raw_data,
+            "total_count": len(raw_data),
+            "query_term": term,
+            "entity_type": entity_type,
+            "platform": os
+        }
+    else:
+        # In case API already returns dictionary structure
+        return raw_data
 
 @mcp.tool
 def get_publisher_apps(

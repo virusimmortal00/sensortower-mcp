@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-Comprehensive testing script for sensortower-mcp.
-Tests all 39 endpoints (34 API + 5 utility) to ensure complete functionality.
+DIRECT API TESTING - NOT TESTING LOCAL MCP PACKAGE
 
-This test validates:
-- All endpoint categories: Utility, App Analysis, Store Marketing, Market Analysis, Consumer Intelligence
-- Schema validation fixes (search_entities returns dict not list)
-- Endpoint URL fixes (impressions, downloads, revenue)
-- Error handling and authentication
+This script tests the raw Sensor Tower API endpoints directly via HTTP calls.
+It does NOT test your local MCP implementation or any fixes you've made.
+
+This validates:
+- Raw API endpoint availability and responses  
+- Authentication and authorization
+- Baseline API behavior (regardless of MCP wrapper fixes)
+
+NOTE: Issues found here are API-level problems, not MCP package issues.
+If you've fixed MCP wrapper issues locally, this test won't reflect those fixes.
 """
 
 import asyncio
@@ -91,7 +95,7 @@ class ComprehensiveTester:
                 elif endpoint == "get_chart_types":
                     result = {"chart_types": {"topfreeapplications": "Top Free Apps"}}
                 elif endpoint == "health_check":
-                    result = {"status": "healthy", "tools_available": 39}
+                    result = {"status": "healthy", "tools_available": 40}
                 
                 self.print_test(endpoint, "PASS", description, str(result))
                 
@@ -235,8 +239,8 @@ class ComprehensiveTester:
                 await self.test_api_endpoint(client, endpoint, params)
 
     async def test_market_analysis_endpoints(self):
-        """Test Market Analysis endpoints (4 endpoints)"""
-        self.print_category("Market Analysis Endpoints (4)")
+        """Test Market Analysis endpoints (5 endpoints)"""
+        self.print_category("Market Analysis Endpoints (5)")
         
         if not self.token:
             self.print_test("market_analysis_*", "SKIP", "No API token provided")
@@ -249,13 +253,53 @@ class ComprehensiveTester:
                     "country": "US", "date": "2024-01-15"
                 }),
                 ("get_top_and_trending", {
-                    "os": "ios", "category": "6005", "country": "US", "date": "2024-01-15"
+                    "os": "ios", "comparison_attribute": "absolute", "time_range": "week",
+                    "measure": "units", "category": "6005", "date": "2024-01-01", "regions": "US"
                 }),
                 ("get_top_publishers", {
-                    "os": "ios", "category": "6005", "country": "US", "date": "2024-01-15"
+                    "os": "ios", "comparison_attribute": "absolute", "time_range": "month",
+                    "measure": "units", "category": "6005", "date": "2024-01-01", "country": "US"
+                }),
+                ("usage_top_apps", {
+                    "os": "ios", "comparison_attribute": "absolute", "time_range": "month",
+                    "measure": "DAU", "date": "2024-01-01", "regions": "US"
                 }),
                 ("get_store_summary", {
                     "os": "ios", "start_date": "2024-01-01", "end_date": "2024-01-07"
+                }),
+            ]
+            
+            for endpoint, params in tests:
+                await self.test_api_endpoint(client, endpoint, params)
+
+    async def test_connected_apps_endpoints(self):
+        """Test Connected Apps endpoints (5 endpoints) - Your Own Apps Only"""
+        self.print_category("Connected Apps Endpoints (5) - Your Own Apps")
+        
+        if not self.token:
+            self.print_test("connected_apps_*", "SKIP", "No API token provided")
+            return
+            
+        async with httpx.AsyncClient(base_url=self.base_url, timeout=30.0) as client:
+            tests = [
+                ("analytics_metrics", {
+                    "app_ids": "1234567890", "countries": "US",
+                    "start_date": "2024-01-01", "end_date": "2024-01-31"
+                }),
+                ("sources_metrics", {
+                    "app_ids": "1234567890", "countries": "US",
+                    "start_date": "2024-01-01", "end_date": "2024-01-31"
+                }),
+                ("sales_reports", {
+                    "os": "ios", "app_ids": "1234567890", "countries": "US",
+                    "date_granularity": "daily", "start_date": "2024-01-01", "end_date": "2024-01-31"
+                }),
+                ("unified_sales_reports", {
+                    "itunes_app_ids": "1234567890", "countries": "US",
+                    "date_granularity": "daily", "start_date": "2024-01-01", "end_date": "2024-01-31"
+                }),
+                ("api_usage", {
+                    "date": "2024-01-01"
                 }),
             ]
             
@@ -299,9 +343,17 @@ class ComprehensiveTester:
                 
                 # Market Analysis endpoints
                 "get_category_rankings": "/v1/{os}/ranking",
-                "get_top_and_trending": "/v1/{os}/top_and_trending/active_users",
+                "get_top_and_trending": "/v1/{os}/sales_report_estimates_comparison_attributes",
                 "get_top_publishers": "/v1/{os}/top_and_trending/publishers",
+                "usage_top_apps": "/v1/{os}/top_and_trending/active_users",
                 "get_store_summary": "/v1/{os}/store_summary",
+                
+                # Connected Apps endpoints (Your Own Apps)
+                "analytics_metrics": "/v1/ios/sales_reports/analytics_metrics",
+                "sources_metrics": "/v1/ios/sales_reports/sources_metrics", 
+                "sales_reports": "/v1/{os}/sales_reports",
+                "unified_sales_reports": "/v1/unified/sales_reports",
+                "api_usage": "/v1/api_usage",
                 
                 # Store Marketing endpoints
                 "get_featured_today_stories": "/v1/ios/featured/today/stories",
@@ -358,9 +410,9 @@ class ComprehensiveTester:
 
     async def run_comprehensive_tests(self):
         """Run all comprehensive tests"""
-        self.print_header("Sensor Tower MCP - Comprehensive Test Suite (All 34 Endpoints)")
+        self.print_header("Sensor Tower MCP - Comprehensive Test Suite (All 40 Endpoints)")
         
-        print(f"🎯 Testing all 34 endpoints across 4 categories")
+        print(f"🎯 Testing all 40 endpoints across 5 categories")
         print(f"🔑 API Token: {'✅ Provided' if self.token else '❌ Missing'}")
         print(f"🌐 Base URL: {self.base_url}")
         
@@ -369,6 +421,7 @@ class ComprehensiveTester:
         await self.test_app_analysis_endpoints()
         await self.test_store_marketing_endpoints()
         await self.test_market_analysis_endpoints()
+        await self.test_connected_apps_endpoints()
 
         
         # Generate summary
@@ -386,9 +439,17 @@ class ComprehensiveTester:
         print(f"{Colors.YELLOW}⚠️  Warnings: {warnings}{Colors.END}")
         print(f"{Colors.YELLOW}⏭️  Skipped: {skipped}{Colors.END}")
         
-        # Show critical fixes validation
+        # Show critical fixes validation  
         print(f"\n{Colors.BOLD}🔧 Bug Fix Validation:{Colors.END}")
-        for endpoint in ["search_entities", "get_impressions", "get_download_estimates", "get_revenue_estimates"]:
+        for endpoint in ["search_entities", "get_impressions", "get_download_estimates", "get_revenue_estimates", "get_top_and_trending", "get_top_publishers"]:
+            if endpoint in self.results:
+                status, details, _ = self.results[endpoint]
+                status_symbol = "✅" if status == "PASS" else "❌" if status == "FAIL" else "⚠️"
+                print(f"   {status_symbol} {endpoint}: {details}")
+        
+        # Show new endpoints validation
+        print(f"\n{Colors.BOLD}🆕 New Endpoints Validation:{Colors.END}")
+        for endpoint in ["analytics_metrics", "sources_metrics", "sales_reports", "unified_sales_reports", "usage_top_apps"]:
             if endpoint in self.results:
                 status, details, _ = self.results[endpoint]
                 status_symbol = "✅" if status == "PASS" else "❌" if status == "FAIL" else "⚠️"

@@ -49,10 +49,10 @@ class MasterTester:
         print("│ Utility Endpoints                           │   5     │")
         print("│ App Analysis Endpoints                      │  19     │")
         print("│ Store Marketing Endpoints                   │   6     │")
-        print("│ Market Analysis Endpoints                   │   4     │")
-        print("│ Consumer Intelligence Endpoints             │   5     │")
+        print("│ Market Analysis Endpoints                   │   5     │")
+        print("│ Connected Apps Endpoints (Your Apps)        │   5     │")
         print("├─────────────────────────────────────────────┼─────────┤")
-        print("│ Total Endpoints Tested                      │  39     │")
+        print("│ Total Endpoints Tested                      │  40     │")
         print("└─────────────────────────────────────────────┴─────────┘")
     
     def run_script(self, script_name: str, description: str) -> Tuple[bool, str]:
@@ -101,11 +101,12 @@ class MasterTester:
             f.write(f"Total runtime: {time.time() - self.start_time:.2f} seconds\n\n")
             
             f.write("ENDPOINT COVERAGE:\n")
-            f.write("- 4 Utility endpoints (country codes, categories, chart types, health)\n")
-            f.write("- 16 App Analysis endpoints (metadata, sales, retention, demographics, etc.)\n")
-            f.write("- 4 Store Marketing endpoints (featured apps, keywords, reviews)\n")
-            f.write("- 4 Market Analysis endpoints (rankings, trends, publishers, store summary)\n")
-            f.write("Total: 27 endpoints tested\n\n")
+            f.write("- 5 Utility endpoints (country codes, categories, chart types, health, api_usage)\n")
+            f.write("- 19 App Analysis endpoints (metadata, sales, retention, demographics, etc.)\n")
+            f.write("- 6 Store Marketing endpoints (featured apps, keywords, reviews, creatives)\n")
+            f.write("- 5 Market Analysis endpoints (rankings, trends, publishers, usage_top_apps, store summary)\n")
+            f.write("- 5 Connected Apps endpoints (analytics_metrics, sources_metrics, sales_reports, unified_sales_reports, api_usage)\n")
+            f.write("Total: 40 endpoints tested\n\n")
             
             f.write("TEST RESULTS:\n")
             for test_name, (success, output) in self.results.items():
@@ -119,7 +120,7 @@ class MasterTester:
     async def run_all_tests(self):
         """Run all test suites"""
         self.print_header("Sensor Tower MCP - Master Test Suite")
-        print("🎯 Comprehensive testing of all 39 endpoints")
+        print("🎯 Comprehensive testing of all 40 endpoints")
         
         self.print_endpoint_summary()
         
@@ -182,11 +183,11 @@ class MasterTester:
         if passed == total:
             print("🟢 READY FOR PRODUCTION")
             print("   All test suites passed successfully")
-            print("   All 27 endpoints validated")
+            print("   All 40 endpoints validated")
         elif passed >= total * 0.8:
             print("🟡 MOSTLY READY")
             print("   Most tests passed, review failures")
-            print("   27 endpoints available for testing")
+            print("   40 endpoints available for testing")
         else:
             print("🔴 NOT READY")
             print("   Multiple test failures detected")

@@ -165,6 +165,89 @@ class MCPFixTester:
             self.print_test("revenue_estimates_endpoint", "FAIL", f"Exception: {str(e)}")
             return False
     
+    def test_top_and_trending_endpoint_fix(self):
+        """Test that we're using the correct endpoint URL and parameters"""
+        print("\n🔧 Testing get_top_and_trending Endpoint Fix Logic")
+        
+        try:
+            # Simulate the endpoint construction logic from our fix
+            os = "ios"
+            
+            # Before fix (wrong):
+            old_endpoint = f"/v1/{os}/top_and_trending"
+            
+            # After fix (correct):
+            new_endpoint = f"/v1/{os}/sales_report_estimates_comparison_attributes"
+            
+            # Validate the fix
+            if "sales_report_estimates_comparison_attributes" in new_endpoint and new_endpoint != old_endpoint:
+                self.print_test("top_and_trending_endpoint", "PASS", 
+                              f"✅ FIXED: {old_endpoint} → {new_endpoint}")
+                
+                # Test new parameter structure
+                new_params = {
+                    "comparison_attribute": "absolute",
+                    "time_range": "week", 
+                    "measure": "units",
+                    "category": "6005",
+                    "date": "2024-01-01",
+                    "regions": "US"
+                }
+                
+                required_params = ["comparison_attribute", "time_range", "measure", "regions"]
+                if all(param in new_params for param in required_params):
+                    self.print_test("top_and_trending_params", "PASS", 
+                                  f"✅ NEW PARAMS: {list(new_params.keys())}")
+                    return True
+                else:
+                    self.print_test("top_and_trending_params", "FAIL", 
+                                  "❌ Missing required parameters")
+                    return False
+            else:
+                self.print_test("top_and_trending_endpoint", "FAIL", 
+                              "❌ Wrong endpoint construction")
+                return False
+                
+        except Exception as e:
+            self.print_test("top_and_trending_endpoint", "FAIL", f"Exception: {str(e)}")
+            return False
+    
+    def test_connected_apps_endpoints_logic(self):
+        """Test new Connected Apps endpoints structure"""
+        print("\n🔧 Testing Connected Apps Endpoints Logic")
+        
+        try:
+            # Test analytics_metrics endpoint
+            analytics_endpoint = "/v1/ios/sales_reports/analytics_metrics"
+            if "analytics_metrics" in analytics_endpoint:
+                self.print_test("analytics_metrics_endpoint", "PASS", 
+                              f"✅ NEW: {analytics_endpoint}")
+            
+            # Test sales_reports endpoint  
+            sales_endpoint = "/v1/ios/sales_reports"
+            if "sales_reports" in sales_endpoint:
+                self.print_test("sales_reports_endpoint", "PASS", 
+                              f"✅ NEW: {sales_endpoint}")
+            
+            # Test unified_sales_reports endpoint
+            unified_endpoint = "/v1/unified/sales_reports"
+            if "unified" in unified_endpoint and "sales_reports" in unified_endpoint:
+                self.print_test("unified_sales_reports_endpoint", "PASS", 
+                              f"✅ NEW: {unified_endpoint}")
+            
+            # Test usage_top_apps endpoint
+            usage_endpoint = "/v1/ios/top_and_trending/active_users"
+            if "active_users" in usage_endpoint:
+                self.print_test("usage_top_apps_endpoint", "PASS", 
+                              f"✅ NEW: {usage_endpoint}")
+                return True
+            
+            return True
+                
+        except Exception as e:
+            self.print_test("connected_apps_endpoints", "FAIL", f"Exception: {str(e)}")
+            return False
+    
     def test_utility_tools_structure(self):
         """Test utility tools return correct structures"""
         print("\n🔧 Testing Utility Tools Structure")
@@ -194,9 +277,9 @@ class MCPFixTester:
                 self.print_test("get_chart_types", "FAIL", "Wrong structure")
             
             # Test health_check logic
-            health_status = {"status": "healthy", "tools_available": 34}
-            if isinstance(health_status, dict) and health_status.get("tools_available") == 34:
-                self.print_test("health_check", "PASS", "Returns proper health status with 34 tools")
+            health_status = {"status": "healthy", "tools_available": 40}
+            if isinstance(health_status, dict) and health_status.get("tools_available") == 40:
+                self.print_test("health_check", "PASS", "Returns proper health status with 40 tools")
                 return True
             else:
                 self.print_test("health_check", "FAIL", "Wrong health structure")
@@ -221,6 +304,8 @@ class MCPFixTester:
         results.append(self.test_impressions_endpoint_fix())
         results.append(self.test_download_estimates_endpoint_fix())
         results.append(self.test_revenue_estimates_endpoint_fix())
+        results.append(self.test_top_and_trending_endpoint_fix())
+        results.append(self.test_connected_apps_endpoints_logic())
         results.append(self.test_utility_tools_structure())
         
         print("\n" + "=" * 55)

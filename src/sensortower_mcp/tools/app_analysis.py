@@ -61,20 +61,68 @@ class AppAnalysisTools(SensorTowerTool):
             - app_ids: Comma-separated app IDs to return creatives for
             - start_date: Start date in YYYY-MM-DD format
             - countries: Comma-separated country codes (e.g. "US,GB,DE")
-            - networks: Comma-separated ad networks (e.g. "Facebook,Admob,Instagram")
+            - networks: Comma-separated ad networks (e.g. "Instagram,Admob,Unity")
             - ad_types: Comma-separated ad types (e.g. "video,image,playable")
             - end_date: Optional end date in YYYY-MM-DD format (defaults to today)
             
             Examples:
-            - iOS app creatives: os="ios", app_ids="835599320", start_date="2023-01-01", countries="US", networks="Facebook", ad_types="video"
-            - Android unified: os="android", app_ids="com.zhiliaoapp.musically", start_date="2023-01-01", countries="US,GB", networks="Admob,Facebook", ad_types="video,image"
+            - iOS app creatives: os="ios", app_ids="835599320", start_date="2023-01-01", countries="US", networks="Instagram", ad_types="video"
+            - Android unified: os="android", app_ids="com.zhiliaoapp.musically", start_date="2023-01-01", countries="US,GB", networks="Admob,Instagram", ad_types="video,image"
+            
+            Note: Valid networks: Adcolony, Admob, Applovin, Chartboost, Instagram, Mopub, Pinterest, Snapchat, Supersonic, Tapjoy, TikTok, Unity, Vungle, Youtube.
+            Facebook is NOT supported by this endpoint.
             """
             async def _get_data():
+                # Valid networks for creatives endpoint (same as network_analysis)
+                valid_networks = {
+                    "Adcolony", "Admob", "Applovin", "Chartboost", "Instagram", 
+                    "Mopub", "Pinterest", "Snapchat", "Supersonic", "Tapjoy", 
+                    "TikTok", "Unity", "Vungle", "Youtube"
+                }
+                
+                # Network normalization and filtering
+                network_mapping = {
+                    "unity": "Unity", 
+                    "google": "Youtube",
+                    "youtube": "Youtube",
+                    "admob": "Admob",
+                    "applovin": "Applovin",
+                    "chartboost": "Chartboost",
+                    "instagram": "Instagram",
+                    "snapchat": "Snapchat",
+                    "tiktok": "TikTok",
+                    "mopub": "Mopub",
+                    "tapjoy": "Tapjoy",
+                    "vungle": "Vungle",
+                    "pinterest": "Pinterest",
+                    "adcolony": "Adcolony",
+                    "supersonic": "Supersonic"
+                }
+                
+                # Filter and normalize networks
+                normalized_networks = []
+                if networks:
+                    network_list = [n.strip() for n in networks.split(',')]
+                    for network in network_list:
+                        normalized_network = None
+                        if network in valid_networks:
+                            normalized_network = network
+                        elif network.lower() in network_mapping:
+                            normalized_network = network_mapping[network.lower()]
+                        
+                        if normalized_network and normalized_network in valid_networks:
+                            normalized_networks.append(normalized_network)
+                        elif network.lower() == "facebook":
+                            # Skip Facebook - not supported
+                            continue
+                        else:
+                            normalized_networks.append(network)
+                
                 params = {
                     "app_ids": app_ids,
                     "start_date": start_date,
                     "countries": countries,
-                    "networks": networks,
+                    "networks": ",".join(normalized_networks),
                     "ad_types": ad_types
                 }
                 if end_date:
@@ -383,7 +431,10 @@ class AppAnalysisTools(SensorTowerTool):
             
             Examples:
             - iOS impressions rank: os="ios", app_ids="284882215", start_date="2024-01-01", end_date="2024-01-31", countries="US"
-            - Multi-network rank: os="android", app_ids="com.facebook.katana", start_date="2024-01-01", end_date="2024-01-31", countries="US", networks="Facebook,Admob"
+            - Multi-network rank: os="android", app_ids="com.facebook.katana", start_date="2024-01-01", end_date="2024-01-31", countries="US", networks="Instagram,Admob"
+            
+            Note: Valid networks: Adcolony, Admob, Applovin, Chartboost, Instagram, Mopub, Pinterest, Snapchat, Supersonic, Tapjoy, TikTok, Unity, Vungle, Youtube.
+            Facebook is NOT supported by this endpoint.
             """
             async def _get_data():
                 params = {

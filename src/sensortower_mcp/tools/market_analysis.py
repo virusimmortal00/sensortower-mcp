@@ -350,18 +350,25 @@ class MarketAnalysisTools(SensorTowerTool):
             - period: Time period - "week", "month", or "quarter"
             - category: Category to search (use iOS categories for unified)
             - country: Country code (default "US")
-            - network: Network name (e.g. "Admob", "Facebook")
+            - network: Network name (e.g. "Admob", "Instagram")
             
             Examples:
             - Search iOS app rank: os="ios", app_id="284882215", role="advertisers", date="2024-01-01", period="month", category="6005", country="US", network="Admob"
-            - Search Android app: os="android", app_id="com.zhiliaoapp.musically", role="publishers", date="2024-01-01", period="week", category="social", country="US", network="Facebook"
+            - Search Android app: os="android", app_id="com.zhiliaoapp.musically", role="publishers", date="2024-01-01", period="week", category="social", country="US", network="Instagram"
             
-            Note: Network names are case-sensitive and must match API specification exactly.
+            Note: Valid networks: Adcolony, Admob, Apple Search Ads, Applovin, Chartboost, Instagram, Mopub, Pinterest, Snapchat, Supersonic, Tapjoy, TikTok, Unity, Vungle, Youtube.
+            Facebook is NOT supported. Network names are case-sensitive.
             """
             async def _get_data():
                 # Normalize network names similar to get_impressions
+                # Valid networks for top_apps endpoints (includes Apple Search Ads)
+                valid_networks = {
+                    "Adcolony", "Admob", "Apple Search Ads", "Applovin", "Chartboost", 
+                    "Instagram", "Mopub", "Pinterest", "Snapchat", "Supersonic", 
+                    "Tapjoy", "TikTok", "Unity", "Vungle", "Youtube"
+                }
+                
                 network_mapping = {
-                    "facebook": "Facebook",
                     "unity": "Unity", 
                     "google": "Youtube",
                     "youtube": "Youtube",
@@ -371,22 +378,27 @@ class MarketAnalysisTools(SensorTowerTool):
                     "instagram": "Instagram",
                     "snapchat": "Snapchat",
                     "tiktok": "TikTok",
-                    "twitter": "Twitter",
                     "mopub": "Mopub",
-                    "inmobi": "InMobi",
                     "tapjoy": "Tapjoy",
                     "vungle": "Vungle",
-                    "pangle": "Pangle",
                     "pinterest": "Pinterest",
-                    "apple search ads": "Apple Search Ads"
+                    "apple search ads": "Apple Search Ads",
+                    "adcolony": "Adcolony",
+                    "supersonic": "Supersonic"
+                    # Note: Facebook is NOT supported by ad_intel endpoints
                 }
                 
-                # Normalize network name
+                # Normalize and validate network name
                 normalized_network = network
-                if network in network_mapping.values():
+                if network in valid_networks:
                     normalized_network = network
                 elif network.lower() in network_mapping:
-                    normalized_network = network_mapping[network.lower()]
+                    candidate = network_mapping[network.lower()]
+                    if candidate in valid_networks:
+                        normalized_network = candidate
+                elif network.lower() == "facebook":
+                    # Facebook not supported - use Instagram instead
+                    normalized_network = "Instagram"
                 
                 params = {
                     "app_id": app_id,

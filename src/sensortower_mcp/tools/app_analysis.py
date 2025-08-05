@@ -164,7 +164,13 @@ class AppAnalysisTools(SensorTowerTool):
                     "networks": ",".join(normalized_networks)
                 }
                 
-                return await self.make_request(f"/v1/{os}/ad_intel/network_analysis", params)
+                response = await self.make_request(f"/v1/{os}/ad_intel/network_analysis", params)
+                # Wrap list response in dictionary for MCP client compatibility
+                return {
+                    "data": response,
+                    "total_records": len(response) if isinstance(response, list) else 0,
+                    "summary": f"Retrieved {len(response) if isinstance(response, list) else 0} SOV data points"
+                }
             
             return self.create_task(_get_data())
 

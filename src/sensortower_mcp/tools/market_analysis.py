@@ -355,16 +355,47 @@ class MarketAnalysisTools(SensorTowerTool):
             Examples:
             - Search iOS app rank: os="ios", app_id="284882215", role="advertisers", date="2024-01-01", period="month", category="6005", country="US", network="Admob"
             - Search Android app: os="android", app_id="com.zhiliaoapp.musically", role="publishers", date="2024-01-01", period="week", category="social", country="US", network="Facebook"
+            
+            Note: Network names are case-sensitive and must match API specification exactly.
             """
             async def _get_data():
+                # Normalize network names similar to get_impressions
+                network_mapping = {
+                    "facebook": "Facebook",
+                    "unity": "Unity", 
+                    "google": "Youtube",
+                    "youtube": "Youtube",
+                    "admob": "Admob",
+                    "applovin": "Applovin",
+                    "chartboost": "Chartboost",
+                    "instagram": "Instagram",
+                    "snapchat": "Snapchat",
+                    "tiktok": "TikTok",
+                    "twitter": "Twitter",
+                    "mopub": "Mopub",
+                    "inmobi": "InMobi",
+                    "tapjoy": "Tapjoy",
+                    "vungle": "Vungle",
+                    "pangle": "Pangle",
+                    "pinterest": "Pinterest",
+                    "apple search ads": "Apple Search Ads"
+                }
+                
+                # Normalize network name
+                normalized_network = network
+                if network in network_mapping.values():
+                    normalized_network = network
+                elif network.lower() in network_mapping:
+                    normalized_network = network_mapping[network.lower()]
+                
                 params = {
                     "app_id": app_id,
                     "role": role,
                     "date": date,
                     "period": period,
-                    "category": category,
+                    "category": str(category),  # Ensure category is string
                     "country": country,
-                    "network": network
+                    "network": normalized_network
                 }
                 
                 return await self.make_request(f"/v1/{os}/ad_intel/top_apps/search", params)

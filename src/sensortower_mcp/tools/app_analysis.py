@@ -90,8 +90,8 @@ class AppAnalysisTools(SensorTowerTool):
             app_ids: str,
             start_date: str,
             end_date: str,
-            countries: str = None,
-            networks: str = None,
+            countries: str,
+            networks: str,
             date_granularity: str = "daily"
         ) -> Dict[str, Any]:
             """
@@ -102,37 +102,68 @@ class AppAnalysisTools(SensorTowerTool):
             - app_ids: Comma-separated app IDs (max 5 per call)
             - start_date: Start date in YYYY-MM-DD format (minimum: 2018-01-01)
             - end_date: End date in YYYY-MM-DD format
-            - countries: Comma-separated country codes
-            - networks: Comma-separated ad networks (optional)
-            - date_granularity: "daily", "weekly", "monthly", "quarterly", or "yearly" (maps to API period parameter)
+            - countries: Comma-separated country codes (required)
+            - networks: Comma-separated ad networks (required)
+            - date_granularity: "daily", "weekly", "monthly" (maps to API period parameter)
             
             Examples:
-            - Daily iOS impressions: os="ios", app_ids="284882215", start_date="2023-01-01", end_date="2023-01-31", countries="US", networks="Facebook"
+            - Daily iOS impressions: os="ios", app_ids="284882215", start_date="2023-01-01", end_date="2023-01-31", countries="US", networks="Facebook,Unity"
             
-            Note: date_granularity is automatically mapped to the API's 'period' parameter.
+            Note: Network names are case-sensitive. Use proper capitalization: Facebook, Unity, Youtube, etc.
             """
             async def _get_data():
+                # Map period - API only supports day, week, month
                 period_mapping = {
                     "daily": "day",
                     "weekly": "week", 
-                    "monthly": "month",
-                    "quarterly": "quarter",
-                    "yearly": "year"
+                    "monthly": "month"
                 }
                 period = period_mapping.get(date_granularity, "day")
+                
+                # Normalize network names to proper case and handle common aliases
+                network_mapping = {
+                    "facebook": "Facebook",
+                    "unity": "Unity", 
+                    "google": "Youtube",  # Common alias
+                    "youtube": "Youtube",
+                    "admob": "Admob",
+                    "applovin": "Applovin",
+                    "chartboost": "Chartboost",
+                    "instagram": "Instagram",
+                    "snapchat": "Snapchat",
+                    "tiktok": "TikTok",
+                    "twitter": "Twitter",
+                    "mopub": "Mopub",
+                    "inmobi": "InMobi",
+                    "tapjoy": "Tapjoy",
+                    "vungle": "Vungle",
+                    "pangle": "Pangle",
+                    "pinterest": "Pinterest"
+                }
+                
+                # Normalize network names
+                normalized_networks = []
+                if networks:
+                    network_list = [n.strip() for n in networks.split(',')]
+                    for network in network_list:
+                        # Try exact match first, then lowercase match
+                        if network in network_mapping.values():
+                            normalized_networks.append(network)
+                        elif network.lower() in network_mapping:
+                            normalized_networks.append(network_mapping[network.lower()])
+                        else:
+                            # Keep original if no mapping found
+                            normalized_networks.append(network)
                 
                 params = {
                     "app_ids": app_ids,
                     "start_date": start_date,
                     "end_date": end_date,
-                    "period": period
+                    "period": period,
+                    "countries": countries,
+                    "networks": ",".join(normalized_networks)
                 }
                 
-                # Add optional parameters if provided
-                if countries:
-                    params["countries"] = countries
-                if networks:
-                    params["networks"] = networks
                 return await self.make_request(f"/v1/{os}/ad_intel/network_analysis", params)
             
             return self.create_task(_get_data())

@@ -431,10 +431,10 @@ class AppAnalysisTools(SensorTowerTool):
             
             Examples:
             - iOS impressions rank: os="ios", app_ids="284882215", start_date="2024-01-01", end_date="2024-01-31", countries="US"
-            - Multi-network rank: os="android", app_ids="com.facebook.katana", start_date="2024-01-01", end_date="2024-01-31", countries="US", networks="Instagram,Admob"
+            - Multi-network rank: os="unified", app_ids="5823dd570211a6d33a0003a3", start_date="2024-01-01", end_date="2024-01-31", countries="US", networks="Facebook,Instagram,Admob"
             
-            Note: Valid networks: Adcolony, Admob, Applovin, Chartboost, Instagram, Mopub, Pinterest, Snapchat, Supersonic, Tapjoy, TikTok, Unity, Vungle, Youtube.
-            Facebook is NOT supported by this endpoint.
+            Note: This endpoint supports more networks than network_analysis, including Facebook, Meta Audience Network, Moloco, Digital Turbine, and others.
+            Network support varies by endpoint - impressions_rank has broader network coverage than network_analysis.
             """
             async def _get_data():
                 params = {
@@ -447,7 +447,13 @@ class AppAnalysisTools(SensorTowerTool):
                 if networks:
                     params["networks"] = networks
                 
-                return await self.make_request(f"/v1/{os}/ad_intel/network_analysis/rank", params)
+                response = await self.make_request(f"/v1/{os}/ad_intel/network_analysis/rank", params)
+                # Wrap list response in dictionary for MCP client compatibility
+                return {
+                    "data": response,
+                    "total_records": len(response) if isinstance(response, list) else 0,
+                    "summary": f"Retrieved {len(response) if isinstance(response, list) else 0} rank data points"
+                }
             
             return self.create_task(_get_data())
 

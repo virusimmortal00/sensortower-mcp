@@ -3,7 +3,7 @@
 Market Analysis API tools for Sensor Tower MCP Server
 """
 
-from typing import Dict, Any, Union, Optional
+from typing import Dict, Any, Union, Optional, Annotated
 from fastmcp import FastMCP
 from ..base import SensorTowerTool
 
@@ -15,39 +15,23 @@ class MarketAnalysisTools(SensorTowerTool):
         
         @mcp.tool
         def get_top_and_trending(
-            os: str,
-            comparison_attribute: str,
-            time_range: str,
-            measure: str,
-            category: Union[int, str],
-            date: str,
-            regions: str,
-            device_type: str = None,
-            end_date: str = None,
-            limit: int = 25,
-            offset: int = None,
-            custom_fields_filter_id: str = None,
-            custom_tags_mode: str = "include_unified_apps",
-            data_model: str = "DM_2025_Q2"
+            os: Annotated[str, "Operating system - 'ios', 'android', or 'unified'"],
+            comparison_attribute: Annotated[str, "Comparison type - 'absolute', 'delta', or 'transformed_delta'"], 
+            time_range: Annotated[str, "Time period - 'day', 'week', 'month', 'quarter', or 'year'"],
+            measure: Annotated[str, "Metric type - 'units' (downloads) or 'revenue'"],
+            category: Annotated[Union[int, str], "Category ID (integer for iOS like 6005, string for Android like 'business')"],
+            date: Annotated[str, "Start date in YYYY-MM-DD format (auto-adjusts to beginning of time_range)"],
+            regions: Annotated[str, "Comma-separated region codes (e.g. 'US,GB,DE')"],
+            device_type: Annotated[str, "Device filter - 'iphone', 'ipad', 'total' for iOS; leave blank for Android; 'total' for unified"] = None,
+            end_date: Annotated[str, "Optional end date for aggregating multiple periods"] = None,
+            limit: Annotated[int, "Max apps per call (default 25, max 2000)"] = 25,
+            offset: Annotated[int, "Number of apps to offset results by"] = None,
+            custom_fields_filter_id: Annotated[str, "Custom fields filter ID"] = None,
+            custom_tags_mode: Annotated[str, "Custom tags mode - 'include_unified_apps' or 'exclude_unified_apps'"] = "include_unified_apps",
+            data_model: Annotated[str, "Data model - 'DM_2025_Q2' (new) or 'DM_2025_Q1' (legacy)"] = "DM_2025_Q2"
         ) -> Dict[str, Any]:
             """
             Get top apps by download and revenue estimates with growth metrics.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - comparison_attribute: "absolute", "delta", or "transformed_delta" 
-            - time_range: "day", "week", "month", "quarter", or "year"
-            - measure: "units" (downloads) or "revenue"
-            - category: Category ID (integer for iOS like 6005, string for Android like "business")
-            - date: Start date in YYYY-MM-DD format (auto-adjusts to beginning of time_range)
-            - regions: Comma-separated region codes (e.g. "US,GB,DE")
-            - device_type: "iphone", "ipad", "total" for iOS; leave blank for Android; "total" for unified
-            - end_date: Optional end date for aggregating multiple periods
-            - limit: Max apps per call (default 25, max 2000)
-            - offset: Number of apps to offset results by
-            - custom_fields_filter_id: Custom fields filter ID
-            - custom_tags_mode: "include_unified_apps" or "exclude_unified_apps" (required for unified with custom fields)
-            - data_model: "DM_2025_Q2" (new model) or "DM_2025_Q1" (legacy)
             
             Examples:
             - Top iOS games by downloads: os="ios", comparison_attribute="absolute", time_range="week", measure="units", category=6014, date="2024-01-01", regions="US"
@@ -416,39 +400,23 @@ class MarketAnalysisTools(SensorTowerTool):
 
         @mcp.tool
         def top_creatives(
-            os: str,
-            date: str,
-            period: str,
-            category: Union[int, str],
-            country: str,
-            network: str,
-            ad_types: str,
-            limit: int = 25,
-            page: int = 1,
-            placements: str = None,
-            video_durations: str = None,
-            aspect_ratios: str = None,
-            banner_dimensions: str = None,
-            new_creative: bool = False
+            os: Annotated[str, "Operating system - 'ios', 'android', or 'unified'"],
+            date: Annotated[str, "Start date for creatives data, YYYY-MM-DD format"],
+            period: Annotated[str, "Time period - 'week', 'month', or 'quarter'"],
+            category: Annotated[Union[int, str], "Category ID (use iOS categories for unified)"],
+            country: Annotated[str, "Country code (default 'US')"],
+            network: Annotated[str, "Network name (e.g. 'Youtube', 'Facebook', 'Admob')"],
+            ad_types: Annotated[str, "Comma-separated ad types (e.g. 'video', 'image', 'playable')"],
+            limit: Annotated[int, "Max creatives returned (25, 100, or 250)"] = 25,
+            page: Annotated[int, "Page number"] = 1,
+            placements: Annotated[str, "Comma-separated ad placements (optional)"] = None,
+            video_durations: Annotated[str, "Comma-separated video duration ranges (optional)"] = None,
+            aspect_ratios: Annotated[str, "Comma-separated aspect ratios (optional)"] = None,
+            banner_dimensions: Annotated[str, "Comma-separated banner dimensions (optional)"] = None,
+            new_creative: Annotated[bool, "If true, return only new creatives"] = False
         ) -> Dict[str, Any]:
             """
             Fetches the top creatives over a given time period.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - date: Start date for creatives data, YYYY-MM-DD format
-            - period: Time period - "week", "month", or "quarter"
-            - category: Category ID (use iOS categories for unified)
-            - country: Country code (default "US")
-            - network: Network name (e.g. "Youtube", "Facebook", "Admob")
-            - ad_types: Comma-separated ad types (e.g. "video", "image", "playable")
-            - limit: Max creatives returned (25, 100, or 250, default 25)
-            - page: Page number (default 1)
-            - placements: Comma-separated ad placements (optional)
-            - video_durations: Comma-separated video duration ranges (optional)
-            - aspect_ratios: Comma-separated aspect ratios (optional)
-            - banner_dimensions: Comma-separated banner dimensions (optional)
-            - new_creative: If true, return only new creatives (default false)
             
             Examples:
             - Top video creatives: os="ios", date="2024-01-01", period="month", category="6005", country="US", network="Youtube", ad_types="video"

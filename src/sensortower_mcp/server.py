@@ -74,8 +74,56 @@ class SensorTowerMCPServer:
         # Add HTTP health check endpoint
         self.add_health_endpoint()
         
+        # Fix FastMCP HTTP transport parameter validation bug
+        if self.args.transport == "http":
+            self.patch_fastmcp_http_transport()
+        
         self.tools_registered = True
     
+    def patch_fastmcp_http_transport(self):
+        """Add middleware to fix Claude Desktop Accept header compatibility"""
+        # FastMCP 2.11.1 HTTP transport is too strict about Accept headers
+        # This middleware fixes the issue before requests reach FastMCP
+        
+        from starlette.middleware.base import BaseHTTPMiddleware
+        from starlette.requests import Request
+        from starlette.responses import Response
+        import json
+        
+        class ClaudeDesktopFixMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request: Request, call_next):
+                # Only process MCP endpoint requests
+                if request.url.path == '/mcp/' or request.url.path == '/mcp':
+                    # Fix Accept header for Claude Desktop compatibility
+                    headers = dict(request.headers)
+                    accept_header = headers.get('accept', '')
+                    
+                    # If Claude Desktop only sends application/json, add text/event-stream
+                    if accept_header == 'application/json':
+                        # Create new headers with both mime types
+                        new_headers = []
+                        for name, value in request.headers.items():
+                            if name.lower() == 'accept':
+                                new_headers.append((name.encode(), f"{value}, text/event-stream".encode()))
+                            else:
+                                new_headers.append((name.encode(), value.encode()))
+                        
+                        # Create new scope with fixed headers
+                        scope = request.scope.copy()
+                        scope['headers'] = new_headers
+                        
+                        # Create new request with fixed headers
+                        from starlette.requests import Request as NewRequest
+                        fixed_request = NewRequest(scope, request.receive)
+                        
+                        return await call_next(fixed_request)
+                
+                return await call_next(request)
+        
+        # Add the middleware to FastMCP's FastAPI app
+        if hasattr(self.mcp, '_app'):
+            self.mcp._app.add_middleware(ClaudeDesktopFixMiddleware)
+
     def add_health_endpoint(self):
         """Add HTTP health check endpoint"""
         @self.mcp.custom_route("/health", methods=["GET"])

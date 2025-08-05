@@ -1,11 +1,11 @@
 [project]
 name = "sensortower-mcp"
-version = "1.2.6"
+version = "1.2.13"
 description = "Model Context Protocol server for Sensor Tower APIs using FastMCP"
 readme = "README-pypi.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastmcp>=0.2.0",
+    "fastmcp>=2.11.1",
     "httpx>=0.25.0",
     "python-dotenv>=1.0.0",
 ]

@@ -3,7 +3,7 @@
 Store Marketing API tools for Sensor Tower MCP Server
 """
 
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, Annotated
 from fastmcp import FastMCP
 from ..base import SensorTowerTool
 
@@ -15,17 +15,12 @@ class StoreMarketingTools(SensorTowerTool):
         
         @mcp.tool
         def get_featured_today_stories(
-            country: str = "US",
-            start_date: str = None,
-            end_date: str = None
+            country: Annotated[str, "Country code (defaults to 'US')"] = "US",
+            start_date: Annotated[str, "Start date in YYYY-MM-DD format (optional, defaults to 3 days ago)"] = None,
+            end_date: Annotated[str, "End date in YYYY-MM-DD format (optional, defaults to today)"] = None
         ) -> Dict[str, Any]:
             """
             Retrieve featured today story metadata from App Store.
-            
-            Parameters:
-            - country: Country code (defaults to "US")
-            - start_date: Start date in YYYY-MM-DD format (optional, defaults to 3 days ago)
-            - end_date: End date in YYYY-MM-DD format (optional, defaults to today)
             
             Examples:
             - US featured stories: country="US", start_date="2024-01-01", end_date="2024-01-07"

@@ -4,7 +4,7 @@ App Analysis API tools for Sensor Tower MCP Server
 """
 
 import httpx
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Annotated
 from fastmcp import FastMCP
 from ..base import SensorTowerTool
 
@@ -16,17 +16,12 @@ class AppAnalysisTools(SensorTowerTool):
         
         @mcp.tool
         def top_in_app_purchases(
-            os: str,
-            app_ids: str,
-            country: str = "US"
+            os: Annotated[str, "Operating system - 'ios' or 'android'"],
+            app_ids: Annotated[str, "Comma-separated app IDs (max 100 per call)"],
+            country: Annotated[str, "Country code"] = "US"
         ) -> Dict[str, Any]:
             """
             Retrieve top in-app purchases for the requested app IDs.
-
-            Parameters:
-            - os: Operating system - "ios" or "android" 
-            - app_ids: Comma-separated app IDs (max 100 per call)
-            - country: Country code (defaults to "US")
             
             Examples:
             - iOS games: os="ios", app_ids="529479190,1262148500", country="US"
@@ -611,17 +606,12 @@ class AppAnalysisTools(SensorTowerTool):
 
         @mcp.tool
         def version_history(
-            os: str,
-            app_id: str,
-            country: str = "US"
+            os: Annotated[str, "Operating system - 'ios' or 'android'"],
+            app_id: Annotated[str, "Single app ID"],
+            country: Annotated[str, "Country code (defaults to 'US')"] = "US"
         ) -> Dict[str, Any]:
             """
             Get version history for a particular app.
-            
-            Parameters:
-            - os: Operating system - "ios" or "android"
-            - app_id: Single app ID
-            - country: Country code (defaults to "US")
             
             Examples:
             - iOS version history: os="ios", app_id="284882215", country="US"
@@ -638,19 +628,13 @@ class AppAnalysisTools(SensorTowerTool):
 
         @mcp.tool
         def get_app_metadata(
-            os: str,
-            app_ids: str,
-            country: str = "US",
-            include_sdk_data: bool = False
+            os: Annotated[str, "Operating system - 'ios' or 'android'"],
+            app_ids: Annotated[str, "Comma-separated app IDs (max 100 per call)"],
+            country: Annotated[str, "Country code for localized data"] = "US",
+            include_sdk_data: Annotated[bool, "Include SDK insights data (requires subscription)"] = False
         ) -> Dict[str, Any]:
             """
             Get comprehensive app metadata including name, publisher, categories, description, screenshots, ratings, etc.
-
-            Parameters:
-            - os: Operating system - "ios" or "android"
-            - app_ids: Comma-separated app IDs (max 100 per call)
-            - country: Country code for localized data (default "US")
-            - include_sdk_data: Include SDK insights data (requires subscription)
 
             Examples:
             - Get iOS app details: os="ios", app_ids="284882215,1262148500", country="US"

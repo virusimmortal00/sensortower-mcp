@@ -3,7 +3,7 @@
 Your Metrics API tools for Sensor Tower MCP Server (Connected Apps)
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Annotated
 from fastmcp import FastMCP
 from ..base import SensorTowerTool
 
@@ -91,23 +91,15 @@ class YourMetricsTools(SensorTowerTool):
 
         @mcp.tool
         def sales_reports(
-            os: str,
-            app_ids: str,
-            countries: str,
-            date_granularity: str,
-            start_date: str,
-            end_date: str
+            os: Annotated[str, "Operating system - 'ios' or 'android'"],
+            app_ids: Annotated[str, "Comma-separated app IDs of apps you manage"],
+            countries: Annotated[str, "Comma-separated country codes (use 'WW' for worldwide)"],
+            date_granularity: Annotated[str, "'daily', 'weekly', 'monthly', or 'quarterly'"],
+            start_date: Annotated[str, "Start date in YYYY-MM-DD format"],
+            end_date: Annotated[str, "End date in YYYY-MM-DD format"]
         ) -> Dict[str, Any]:
             """
             Get downloads and revenue sales report for your connected apps.
-            
-            Parameters:
-            - os: Operating system - "ios" or "android"
-            - app_ids: Comma-separated app IDs of apps you manage
-            - countries: Comma-separated country codes (use "WW" for worldwide)
-            - date_granularity: "daily", "weekly", "monthly", or "quarterly"
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format
             
             Examples:
             - iOS daily sales: os="ios", app_ids="1234567890", countries="US,CA", date_granularity="daily", start_date="2024-01-01", end_date="2024-01-31"

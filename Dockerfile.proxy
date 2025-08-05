@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install FastMCP
+RUN pip install fastmcp>=2.11.1
+
+# Copy the proxy server
+COPY proxy_http_server.py /app/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8666/health || exit 1
+
+# Expose port
+EXPOSE 8666
+
+# Run the proxy server
+CMD ["python", "proxy_http_server.py"]

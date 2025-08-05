@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+Date: Tue, 05 Aug 2025 18:35:13 GMT
+Content-Type: text/event-stream
+Transfer-Encoding: chunked
+Connection: keep-alive
+Cache-Control: no-cache, no-transform
+Mcp-Session-Id: 5861173b61ea46d4a370eff854d59958
+Server: uvicorn
+X-Accel-Buffering: no
+

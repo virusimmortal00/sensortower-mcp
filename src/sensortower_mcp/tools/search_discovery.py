@@ -3,7 +3,7 @@
 Search and Discovery API tools for Sensor Tower MCP Server
 """
 
-from typing import Dict, Any, Union, Optional
+from typing import Dict, Any, Union, Optional, Annotated
 from fastmcp import FastMCP
 from ..base import SensorTowerTool, wrap_list_response
 
@@ -15,19 +15,13 @@ class SearchDiscoveryTools(SensorTowerTool):
         
         @mcp.tool
         async def search_entities(
-            os: str,
-            entity_type: str,
-            term: str,
-            limit: int = 100
+            os: Annotated[str, "Platform - 'ios', 'android', 'both_stores', or 'unified'"],
+            entity_type: Annotated[str, "Entity type - 'app' or 'publisher'"],
+            term: Annotated[str, "Search term (min 2 non-Latin or 3 Latin characters)"],
+            limit: Annotated[int, "Max apps returned per call (max 250)"] = 100
         ) -> Dict[str, Any]:
             """
             Search for apps and publishers by name, description, or other metadata.
-            
-            Parameters:
-            - os: Platform - "ios", "android", "both_stores", or "unified"
-            - entity_type: "app" or "publisher" (required)
-            - term: Search term (min 2 non-Latin or 3 Latin characters, required)
-            - limit: Max apps returned per call (max 250, default 100)
             
             Examples:
             - Search iOS apps: os="ios", entity_type="app", term="Lyft", limit=50

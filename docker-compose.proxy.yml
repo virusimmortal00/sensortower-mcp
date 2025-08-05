@@ -1,0 +1,35 @@
+services:
+  sensortower-proxy:
+    image: bobbysayers492/sensortower-proxy:latest
+    container_name: sensortower-proxy
+    ports:
+      - "8668:8666"  # Use different port to avoid conflicts
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8666/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.sensortower.service=proxy"
+      - "com.sensortower.version=1.0.0"
+
+  # Optional: nginx reverse proxy for production (Traefik handles HTTPS)
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: sensortower-proxy-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - sensortower-proxy
+    restart: unless-stopped
+    profiles:
+      - production
+
+networks:
+  default:
+    name: sensortower-proxy-network
+    driver: bridge

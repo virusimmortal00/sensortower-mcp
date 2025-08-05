@@ -107,9 +107,10 @@ class AppAnalysisTools(SensorTowerTool):
             - date_granularity: "daily", "weekly", "monthly" (maps to API period parameter)
             
             Examples:
-            - Daily iOS impressions: os="ios", app_ids="284882215", start_date="2023-01-01", end_date="2023-01-31", countries="US", networks="Facebook,Unity"
+            - Daily iOS impressions: os="ios", app_ids="284882215", start_date="2023-01-01", end_date="2023-01-31", countries="US", networks="Instagram,Unity,Youtube"
             
-            Note: Network names are case-sensitive. Use proper capitalization: Facebook, Unity, Youtube, etc.
+            Note: Valid networks for this endpoint: Adcolony, Admob, Applovin, Chartboost, Instagram, Mopub, Pinterest, Snapchat, Supersonic, Tapjoy, TikTok, Unity, Vungle, Youtube.
+            Facebook is NOT supported by the network_analysis endpoint.
             """
             async def _get_data():
                 # Map period - API only supports day, week, month
@@ -120,9 +121,15 @@ class AppAnalysisTools(SensorTowerTool):
                 }
                 period = period_mapping.get(date_granularity, "day")
                 
-                # Normalize network names to proper case and handle common aliases
+                # Valid networks for network_analysis endpoint (from API error message)
+                valid_networks = {
+                    "Adcolony", "Admob", "Applovin", "Chartboost", "Instagram", 
+                    "Mopub", "Pinterest", "Snapchat", "Supersonic", "Tapjoy", 
+                    "TikTok", "Unity", "Vungle", "Youtube"
+                }
+                
+                # Network mapping with endpoint-specific filtering
                 network_mapping = {
-                    "facebook": "Facebook",
                     "unity": "Unity", 
                     "google": "Youtube",  # Common alias
                     "youtube": "Youtube",
@@ -132,27 +139,35 @@ class AppAnalysisTools(SensorTowerTool):
                     "instagram": "Instagram",
                     "snapchat": "Snapchat",
                     "tiktok": "TikTok",
-                    "twitter": "Twitter",
                     "mopub": "Mopub",
-                    "inmobi": "InMobi",
                     "tapjoy": "Tapjoy",
                     "vungle": "Vungle",
-                    "pangle": "Pangle",
-                    "pinterest": "Pinterest"
+                    "pinterest": "Pinterest",
+                    "adcolony": "Adcolony",
+                    "supersonic": "Supersonic"
+                    # Note: Facebook is NOT supported by network_analysis endpoint
                 }
                 
-                # Normalize network names
+                # Normalize and filter network names
                 normalized_networks = []
                 if networks:
                     network_list = [n.strip() for n in networks.split(',')]
                     for network in network_list:
                         # Try exact match first, then lowercase match
-                        if network in network_mapping.values():
-                            normalized_networks.append(network)
+                        normalized_network = None
+                        if network in valid_networks:
+                            normalized_network = network
                         elif network.lower() in network_mapping:
-                            normalized_networks.append(network_mapping[network.lower()])
+                            normalized_network = network_mapping[network.lower()]
+                        
+                        # Only add if it's in the valid networks list
+                        if normalized_network and normalized_network in valid_networks:
+                            normalized_networks.append(normalized_network)
+                        elif network.lower() == "facebook":
+                            # Skip Facebook with warning - not supported by this endpoint
+                            continue
                         else:
-                            # Keep original if no mapping found
+                            # Keep original if no mapping found (let API validate)
                             normalized_networks.append(network)
                 
                 params = {

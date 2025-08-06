@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install FastMCP
-RUN pip install fastmcp>=2.11.1
+# Install dependencies
+RUN pip install fastmcp>=2.11.1 httpx uvicorn
 
 # Copy the proxy server
 COPY proxy_http_server.py /app/

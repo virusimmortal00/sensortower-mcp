@@ -31,5 +31,5 @@ services:
 
 networks:
   default:
-    name: sensortower-proxy-network
-    driver: bridge
+    name: sensortower-mcp-network
+    external: true

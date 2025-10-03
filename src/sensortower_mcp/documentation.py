@@ -7,6 +7,17 @@ from fastmcp import FastMCP
 
 def register_documentation(mcp: FastMCP):
     """Register documentation resources with FastMCP"""
+    @mcp.resource("sensor-tower://info")
+    def server_info() -> dict:
+        """Basic server info for MCP clients."""
+        from .config import API_BASE_URL
+        return {
+            "name": "Sensor Tower MCP Server",
+            "version": "1.2.x",
+            "transport": "stdio/http",
+            "api_base_url": API_BASE_URL,
+            "tool_count": 40,
+        }
     
     @mcp.resource("sensor-tower://docs")
     def api_documentation() -> str:
@@ -42,7 +53,7 @@ def register_documentation(mcp: FastMCP):
         - **get_reviews**: Get app reviews and ratings data
         - **research_keyword**: Get detailed keyword information including traffic data and ranking difficulty
         
-        ### Market Analysis API (8 endpoints)
+        ### Market Analysis API (12 endpoints)
         - **get_category_rankings**: Get top ranking apps by category and chart type
         - **get_top_and_trending**: Get top apps by downloads/revenue with growth metrics
         - **get_top_publishers**: Get top publishers by downloads/revenue with growth metrics  
@@ -52,6 +63,10 @@ def register_documentation(mcp: FastMCP):
         - **get_publisher_apps**: Get all apps for a specific publisher
         - **get_unified_publisher_apps**: Get unified publisher and all associated apps
         - **get_app_ids_by_category**: Get app IDs from a given category and date range
+        - **top_apps**: Get top advertisers or publishers by ad impressions and spend
+        - **top_apps_search**: Filter top advertisers by a specific app focus
+        - **top_creatives**: Get top performing creatives across ad networks
+        - **games_breakdown**: Get sub-category breakdowns within Games market segments
         
         ### Connected Apps API (5 endpoints) - Your Own Apps Only
         - **analytics_metrics**: Get detailed App Store analytics for your connected apps

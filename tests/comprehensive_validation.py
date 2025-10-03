@@ -16,11 +16,9 @@ Original failing tools (7):
 """
 
 import os
-import sys
 import json
 import requests
 from typing import List, Dict, Any
-from pathlib import Path
 
 # Try to load .env file if available
 try:
@@ -71,7 +69,8 @@ class ComprehensiveValidator:
                     "start_date": "2024-01-01",
                     "end_date": "2024-01-07",
                     "countries": "US",
-                    "networks": "Instagram"  # Fixed: Instagram vs facebook
+                    "networks": "Instagram",  # Fixed: Instagram vs facebook
+                    "ad_types": "video"  # Required parameter per API contract
                 },
                 "description": "422 parameter fix - correct network names"
             },
@@ -164,18 +163,19 @@ class ComprehensiveValidator:
         
         # Apply our fix (same logic as in main.py)
         if isinstance(simulated_response, list):
-            fixed_response = {
+            converted_response = {
                 "apps": simulated_response,
                 "total_count": len(simulated_response),
                 "publisher_id": "test",
                 "platform": "ios"
             }
-            
+
             result = {
                 "tool": test_case["tool"],
                 "status": "PASS",
                 "details": "Format conversion working (list→dict)",
-                "category": test_case["category"]
+                "category": test_case["category"],
+                "sample_response": converted_response,
             }
             self.print_test(test_case["tool"], "PASS", result["details"])
         else:
@@ -215,7 +215,7 @@ class ComprehensiveValidator:
                         result["response_info"] = f"Dict with keys: {list(data.keys())}"
                     elif isinstance(data, list):
                         result["response_info"] = f"List with {len(data)} items"
-                except:
+                except Exception:
                     result["response_info"] = "Response received"
                     
                 self.print_test(test_case["tool"], "PASS", result["details"])
@@ -234,7 +234,7 @@ class ComprehensiveValidator:
                     try:
                         error = response.json()
                         print(f"   🔍 422 Error: {json.dumps(error, indent=6)}")
-                    except:
+                    except Exception:
                         pass
                         
             return result
@@ -282,22 +282,22 @@ class ComprehensiveValidator:
             total_failed += len(failed)
         
         # Overall summary
-        print(f"\n🎯 OVERALL RESULTS:")
+        print("\n🎯 OVERALL RESULTS:")
         print(f"   ✅ Fixed and Working: {total_passed}/7 tools ({total_passed/7*100:.1f}%)")
         print(f"   ❌ Still Failing: {total_failed}/7 tools ({total_failed/7*100:.1f}%)")
         
         if total_passed == 7:
-            print(f"\n🎉 COMPLETE SUCCESS!")
+            print("\n🎉 COMPLETE SUCCESS!")
             print("   All previously failing tools are now working correctly!")
             print("   Systematic diagnostic approach was 100% effective!")
         elif total_passed > 5:
-            print(f"\n🟢 Excellent Progress!")
+            print("\n🟢 Excellent Progress!")
             print(f"   {total_passed}/7 tools fixed - investigate remaining issues")
         elif total_passed > 2:
-            print(f"\n🟡 Good Progress!")
+            print("\n🟡 Good Progress!")
             print(f"   {total_passed}/7 tools fixed - continue systematic approach")
         else:
-            print(f"\n🔴 More Work Needed")
+            print("\n🔴 More Work Needed")
             print("   Review fix implementations and continue diagnostics")
         
         return {
@@ -327,7 +327,7 @@ def main():
     report = validator.run_comprehensive_validation()
     
     # Provide next steps based on results
-    print(f"\n📋 NEXT STEPS:")
+    print("\n📋 NEXT STEPS:")
     if report["success_rate"] == 100:
         print("1. ✅ Update test report with success results")
         print("2. ✅ Document systematic diagnostic methodology")

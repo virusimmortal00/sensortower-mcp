@@ -7,10 +7,9 @@ tools with the correct parameter values.
 """
 
 import os
-import sys
 import json
 import requests
-from pathlib import Path
+import pytest
 
 # Try to load .env file if available
 try:
@@ -24,8 +23,7 @@ def test_corrected_parameters():
     
     token = os.getenv("SENSOR_TOWER_API_TOKEN")
     if not token:
-        print("⚠️  No API token - cannot test corrected parameters")
-        return False
+        pytest.skip("SENSOR_TOWER_API_TOKEN is required for live API checks")
     
     base_url = "https://api.sensortower.com"
     
@@ -46,28 +44,28 @@ def test_corrected_parameters():
             "end_date": "2024-01-07",
             "countries": "US",
             "networks": "Instagram",  # Corrected network name
+            "ad_types": "video",
             "auth_token": token
         }
         
         response = requests.get(url, params=params, timeout=30)
         
-        if response.status_code == 200:
-            print("✅ SUCCESS: Creatives API working with Instagram network!")
-            data = response.json()
-            print(f"   📊 Response type: {type(data)}")
-            if isinstance(data, dict):
-                print(f"   📋 Keys: {list(data.keys())}")
-            elif isinstance(data, list):
-                print(f"   📦 Items: {len(data)}")
-        else:
-            print(f"❌ Still failing: {response.status_code}")
+        if response.status_code != 200:
+            details = response.text[:200]
             if response.status_code == 422:
                 try:
-                    error_data = response.json()
-                    print(f"   🔍 Error: {json.dumps(error_data, indent=6)}")
-                except:
-                    print(f"   🔍 Error: {response.text[:200]}")
-                    
+                    details = json.dumps(response.json(), indent=2)[:200]
+                except Exception:  # pragma: no cover - defensive
+                    details = response.text[:200]
+            pytest.fail(f"Creatives endpoint returned {response.status_code}: {details}")
+
+        print("✅ SUCCESS: Creatives API working with Instagram network!")
+        data = response.json()
+        print(f"   📊 Response type: {type(data)}")
+        if isinstance(data, dict):
+            print(f"   📋 Keys: {list(data.keys())}")
+        elif isinstance(data, list):
+            print(f"   📦 Items: {len(data)}")
     except Exception as e:
         print(f"❌ Test error: {e}")
     
@@ -77,31 +75,30 @@ def test_corrected_parameters():
         url = f"{base_url}/v1/ios/ad_intel/network_analysis"
         params = {
             "app_ids": "284882215",
-            "start_date": "2024-01-01", 
+            "start_date": "2024-01-01",
             "end_date": "2024-01-07",
             "countries": "US",
             "networks": "Instagram",
-            "period": "daily",  # Added required period parameter
+            "period": "day",  # API accepts day/week/month/quarter/year
             "auth_token": token
         }
-        
+
         response = requests.get(url, params=params, timeout=30)
         
-        if response.status_code == 200:
-            print("✅ SUCCESS: Network analysis working with period parameter!")
-            data = response.json()
-            print(f"   📊 Response type: {type(data)}")
-            if isinstance(data, dict):
-                print(f"   📋 Keys: {list(data.keys())}")
-        else:
-            print(f"❌ Still failing: {response.status_code}")
+        if response.status_code != 200:
+            details = response.text[:200]
             if response.status_code == 422:
                 try:
-                    error_data = response.json()
-                    print(f"   🔍 Error: {json.dumps(error_data, indent=6)}")
-                except:
-                    print(f"   🔍 Error: {response.text[:200]}")
-                    
+                    details = json.dumps(response.json(), indent=2)[:200]
+                except Exception:  # pragma: no cover - defensive
+                    details = response.text[:200]
+            pytest.fail(f"Network analysis endpoint returned {response.status_code}: {details}")
+
+        print("✅ SUCCESS: Network analysis working with period parameter!")
+        data = response.json()
+        print(f"   📊 Response type: {type(data)}")
+        if isinstance(data, dict):
+            print(f"   📋 Keys: {list(data.keys())}")
     except Exception as e:
         print(f"❌ Test error: {e}")
     
@@ -114,18 +111,21 @@ def test_corrected_parameters():
             "start_date": "2024-01-01",
             "countries": "US", 
             "networks": "Instagram,Admob,Unity",  # Multiple valid networks
+            "ad_types": "video",
             "auth_token": token
         }
         
         response = requests.get(url, params=params, timeout=30)
         
-        if response.status_code == 200:
-            print("✅ SUCCESS: Multiple networks working!")
-            data = response.json()
-            print(f"   📊 Response: {type(data)} with content")
-        else:
-            print(f"❌ Multiple networks failed: {response.status_code}")
-            
+        if response.status_code != 200:
+            pytest.fail(
+                "Multiple network creatives request failed "
+                f"with {response.status_code}: {response.text[:200]}"
+            )
+
+        print("✅ SUCCESS: Multiple networks working!")
+        data = response.json()
+        print(f"   📊 Response: {type(data)} with content")
     except Exception as e:
         print(f"❌ Test error: {e}")
     
@@ -140,7 +140,7 @@ def test_corrected_parameters():
     print("2. Add required parameters for each endpoint")
     print("3. Test all advertising intelligence tools")
     
-    return True
+    print("Tests completed successfully")
 
 def main():
     """Run corrected parameter tests"""
@@ -148,15 +148,18 @@ def main():
     print("=" * 50)
     print("Testing advertising intelligence tools with fixes from 422 investigation")
     print()
-    
-    success = test_corrected_parameters()
-    
-    if success:
-        print("\n🎉 Parameter correction testing completed!")
+
+    try:
+        test_corrected_parameters()
+    except pytest.SkipTest as exc:  # pragma: no cover - CLI convenience
+        print(f"\n⚠️  {exc.msg}")
         return 0
-    else:
-        print("\n⚠️  Could not test - check API token")
+    except AssertionError as exc:  # pragma: no cover - CLI convenience
+        print(f"\n❌ Test failed: {exc}")
         return 1
+
+    print("\n🎉 Parameter correction testing completed!")
+    return 0
 
 if __name__ == "__main__":
     exit(main())

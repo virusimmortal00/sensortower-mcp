@@ -6,7 +6,6 @@ Tests actual API calls with real responses from Sensor Tower endpoints.
 
 import asyncio
 import httpx
-import json
 import os
 import sys
 from pathlib import Path
@@ -18,9 +17,10 @@ try:
 except ImportError:
     pass
 
-# Add parent directory to path to import main module
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from main import get_auth_token, API_BASE_URL
+# Ensure the package source is importable when running from repo root
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from sensortower_mcp.config import get_auth_token, API_BASE_URL
 
 class Colors:
     GREEN = '\033[92m'

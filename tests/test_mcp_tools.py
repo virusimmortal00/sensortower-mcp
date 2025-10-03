@@ -8,11 +8,9 @@ exact conditions and transformations we implemented in main.py.
 This validates that our fixes work correctly within the MCP tool context.
 """
 
-import asyncio
 import os
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock
 
 # Try to load .env file if available
 try:
@@ -191,10 +189,11 @@ class MCPFixTester:
                     "measure": "units",
                     "category": "6005",
                     "date": "2024-01-01",
-                    "regions": "US"
+                    "regions": "US",
+                    "device_type": "total"
                 }
                 
-                required_params = ["comparison_attribute", "time_range", "measure", "regions"]
+                required_params = ["comparison_attribute", "time_range", "measure", "regions", "device_type"]
                 if all(param in new_params for param in required_params):
                     self.print_test("top_and_trending_params", "PASS", 
                                   f"✅ NEW PARAMS: {list(new_params.keys())}")

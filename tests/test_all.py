@@ -11,7 +11,7 @@ import sys
 import os
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Tuple
 
 # Try to load .env file if available
 try:
@@ -42,7 +42,7 @@ class MasterTester:
     
     def print_endpoint_summary(self):
         """Print comprehensive endpoint testing summary"""
-        print(f"\n📊 Comprehensive Endpoint Testing Coverage:")
+        print("\n📊 Comprehensive Endpoint Testing Coverage:")
         print("┌─────────────────────────────────────────────┬─────────┐")
         print("│ Category                                    │ Count   │")
         print("├─────────────────────────────────────────────┼─────────┤")
@@ -152,7 +152,8 @@ class MasterTester:
         # Check Python dependencies
         try:
             import httpx
-            print("✅ httpx: Available")
+
+            print(f"✅ httpx: Available ({httpx.__version__})")
         except ImportError:
             print("❌ httpx: Missing (install with: pip install httpx)")
         
@@ -206,7 +207,7 @@ async def main():
     try:
         success = await tester.run_all_tests()
         
-        print(f"\n🎉 Master test suite completed!")
+        print("\n🎉 Master test suite completed!")
         print(f"⏱️  Total runtime: {time.time() - tester.start_time:.2f} seconds")
         
         if not success:

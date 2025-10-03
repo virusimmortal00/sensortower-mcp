@@ -5,7 +5,6 @@ Configuration and setup for Sensor Tower MCP Server
 
 import argparse
 import os
-import sys
 import httpx
 from typing import Optional
 
@@ -52,7 +51,7 @@ def create_http_client(token: str) -> httpx.AsyncClient:
     """Create HTTP client for Sensor Tower API"""
     return httpx.AsyncClient(
         base_url=API_BASE_URL,
-        timeout=httpx.Timeout(30.0)
+        timeout=httpx.Timeout(connect=5.0, read=45.0, write=45.0, pool=5.0)
     )
 
 def validate_token(token: Optional[str] = None) -> bool:

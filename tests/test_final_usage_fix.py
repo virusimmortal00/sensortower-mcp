@@ -6,9 +6,9 @@ Quick test for the get_usage_active_users date_granularity fix.
 """
 
 import os
-import sys
 import json
 import requests
+import pytest
 
 # Try to load .env file if available
 try:
@@ -22,8 +22,7 @@ def test_final_usage_fix():
     
     token = os.getenv("SENSOR_TOWER_API_TOKEN")
     if not token:
-        print("⚠️  No API token available")
-        return False
+        pytest.skip("SENSOR_TOWER_API_TOKEN is required for live API checks")
     
     base_url = "https://api.sensortower.com"
     
@@ -45,39 +44,40 @@ def test_final_usage_fix():
         
         response = requests.get(url, params=params, timeout=30)
         
-        if response.status_code == 200:
-            print("✅ SUCCESS: get_usage_active_users working!")
-            data = response.json()
-            print(f"   📊 Response: {type(data)} with {len(data) if isinstance(data, list) else 'dict'} content")
-            return True
-        else:
-            print(f"❌ Still failing: {response.status_code}")
+        if response.status_code != 200:
+            details = response.text[:200]
             if response.status_code == 422:
                 try:
-                    error = response.json()
-                    print(f"   🔍 Error: {json.dumps(error, indent=6)}")
-                except:
-                    pass
-            return False
-            
+                    details = json.dumps(response.json(), indent=2)[:200]
+                except Exception:  # pragma: no cover - defensive
+                    details = response.text[:200]
+            pytest.fail(f"get_usage_active_users returned {response.status_code}: {details}")
+
+        print("✅ SUCCESS: get_usage_active_users working!")
+        data = response.json()
+        length = len(data) if isinstance(data, list) else 'dict'
+        print(f"   📊 Response: {type(data)} with {length} content")
+
     except Exception as e:
-        print(f"❌ Test error: {e}")
-        return False
+        pytest.fail(f"Request error: {e}")
 
 def main():
     """Run final usage fix test"""
     print("🚀 FINAL USAGE INTELLIGENCE FIX TEST")
     print("=" * 50)
     
-    success = test_final_usage_fix()
-    
-    if success:
-        print("\n🎉 Final fix successful!")
-        print("All usage intelligence tools should now be working!")
+    try:
+        test_final_usage_fix()
+    except pytest.SkipTest as exc:  # pragma: no cover - CLI convenience
+        print(f"\n⚠️  {exc.msg}")
         return 0
-    else:
-        print("\n⚠️  Fix unsuccessful - may need further investigation")
+    except AssertionError as exc:  # pragma: no cover - CLI convenience
+        print(f"\n⚠️  Fix unsuccessful - {exc}")
         return 1
+
+    print("\n🎉 Final fix successful!")
+    print("All usage intelligence tools should now be working!")
+    return 0
 
 if __name__ == "__main__":
     exit(main())

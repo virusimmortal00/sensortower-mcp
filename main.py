@@ -5,8 +5,7 @@ Sensor Tower MCP Server Entry Point
 This is a simplified entry point that uses the modular server implementation.
 """
 
-import asyncio
-from src.sensortower_mcp.server import main, cli
+from src.sensortower_mcp.server import cli
 
 if __name__ == "__main__":
     cli()

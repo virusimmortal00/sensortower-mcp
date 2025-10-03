@@ -9,12 +9,10 @@ Based on diagnostics: Endpoints exist (405 status) but reject parameters (422).
 """
 
 import os
-import sys
 import json
 import requests
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from dataclasses import dataclass
-from pathlib import Path
 
 # Try to load .env file if available
 try:
@@ -82,7 +80,7 @@ class Parameter422Investigator:
                         result["response_info"] = f"List with {len(data)} items"
                     else:
                         result["response_info"] = f"Response type: {type(data)}"
-                except:
+                except Exception:
                     result["response_info"] = "Response received but not JSON"
                     
             elif response.status_code == 422:
@@ -105,7 +103,7 @@ class Parameter422Investigator:
                         "Verify required parameters are not missing"
                     ]
                     
-                except:
+                except Exception:
                     error_text = response.text[:200]
                     result["details"] = f"422 Error (unparseable): {error_text}"
                     result["recommendations"] = ["Check raw response format", "Verify API documentation"]
@@ -158,7 +156,8 @@ class Parameter422Investigator:
                     "app_ids": "284882215",
                     "start_date": "2024-01-01",
                     "countries": "US",
-                    "networks": "facebook"
+                    "networks": "facebook",
+                    "ad_types": "video"
                 },
                 description="Minimal required parameters"
             ),
@@ -171,7 +170,8 @@ class Parameter422Investigator:
                     "app_ids": 284882215,  # Integer instead of string
                     "start_date": "2024-01-01",
                     "countries": "US",
-                    "networks": "facebook"
+                    "networks": "facebook",
+                    "ad_types": "video"
                 },
                 description="app_ids as integer instead of string"
             ),
@@ -184,7 +184,8 @@ class Parameter422Investigator:
                     "app_ids": "284882215",
                     "start_date": "2024/01/01",  # Different date format
                     "countries": "US", 
-                    "networks": "facebook"
+                    "networks": "facebook",
+                    "ad_types": "video"
                 },
                 description="Alternative date format (YYYY/MM/DD)"
             ),
@@ -197,7 +198,8 @@ class Parameter422Investigator:
                     "app_id": "284882215",  # Singular instead of plural
                     "start_date": "2024-01-01",
                     "country": "US",  # Singular instead of plural
-                    "network": "facebook"  # Singular instead of plural
+                    "network": "facebook",  # Singular instead of plural
+                    "ad_types": "video"
                 },
                 description="Singular parameter names instead of plural"
             ),
@@ -211,7 +213,8 @@ class Parameter422Investigator:
                     "start_date": "2024-01-01",
                     "end_date": "2024-01-07",  # Add end_date
                     "countries": "US",
-                    "networks": "facebook"
+                    "networks": "facebook",
+                    "ad_types": "video"
                 },
                 description="Include end_date parameter"
             ),
@@ -237,7 +240,8 @@ class Parameter422Investigator:
                 params={
                     "app_ids": "284882215",
                     "start_date": "2024-01-01",
-                    "countries": "US"
+                    "countries": "US",
+                    "ad_types": "video"
                     # No networks parameter
                 },
                 description="Test without networks parameter"
@@ -251,7 +255,8 @@ class Parameter422Investigator:
                     "app_ids": "284882215",
                     "start_date": "2024-01-01", 
                     "countries": "US",
-                    "networks": "admob,unity,ironsource"  # Different networks
+                    "networks": "admob,unity,ironsource",  # Different networks
+                    "ad_types": "video"
                 },
                 description="Test with different network values"
             )
@@ -280,20 +285,20 @@ class Parameter422Investigator:
         error_tests = [r for r in results if r.get("status") == "ERROR"]
         skipped_tests = [r for r in results if r.get("status") == "SKIPPED"]
         
-        print(f"📈 Test Summary:")
+        print("📈 Test Summary:")
         print(f"   ✅ Passed: {len(passed_tests)}")
         print(f"   ❌ Failed: {len(failed_tests)}")
         print(f"   🔥 Errors: {len(error_tests)}")
         print(f"   ⏭️  Skipped: {len(skipped_tests)}")
         
         if passed_tests:
-            print(f"\n🎉 WORKING PARAMETER COMBINATIONS:")
+            print("\n🎉 WORKING PARAMETER COMBINATIONS:")
             for test in passed_tests:
                 print(f"   ✅ {test['test_name']}")
                 print(f"      → {test.get('response_info', 'Response received')}")
         
         if failed_tests:
-            print(f"\n🔍 FAILED TESTS WITH INSIGHTS:")
+            print("\n🔍 FAILED TESTS WITH INSIGHTS:")
             
             # Group by status code
             by_status = {}
@@ -315,7 +320,7 @@ class Parameter422Investigator:
                             print(f"         🔍 Error details: {json.dumps(error_data, indent=12)}")
         
         # Provide recommendations
-        print(f"\n💡 RECOMMENDATIONS:")
+        print("\n💡 RECOMMENDATIONS:")
         
         if not passed_tests and failed_tests:
             print("   🔴 No parameters worked - possible issues:")

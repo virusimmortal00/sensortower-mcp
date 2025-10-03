@@ -8,10 +8,8 @@ This script systematically diagnoses the specific issues found in comprehensive 
 3. Publisher tools (implementation errors)
 """
 
-import asyncio
 import os
 import sys
-import json
 import requests
 from pathlib import Path
 from typing import Dict, List, Any
@@ -141,7 +139,8 @@ class SensorTowerDiagnostics:
                     "app_ids": "284882215",
                     "start_date": "2024-01-01",
                     "countries": "US",
-                    "networks": "facebook"
+                    "networks": "facebook",
+                    "ad_types": "video"
                 }
             },
             {
@@ -153,7 +152,7 @@ class SensorTowerDiagnostics:
                     "end_date": "2024-01-31",
                     "countries": "US", 
                     "networks": "facebook,admob",
-                    "creative_types": "video,image"
+                    "ad_types": "video,image"
                 }
             }
         ]
@@ -179,7 +178,7 @@ class SensorTowerDiagnostics:
                     tool_name=test_case["name"],
                     issue_type="parameters_valid", 
                     status="PASS",
-                    details=f"Parameters accepted (200 OK)",
+                    details="Parameters accepted (200 OK)",
                     recommendations=["Original parameters may be incorrect"]
                 )
             elif response.status_code == 422:
@@ -187,7 +186,7 @@ class SensorTowerDiagnostics:
                 try:
                     error_data = response.json()
                     error_msg = error_data.get("message", "Unknown validation error")
-                except:
+                except Exception:
                     error_msg = response.text[:100]
                     
                 result = DiagnosticResult(
@@ -433,7 +432,7 @@ class SensorTowerDiagnostics:
         failed_tests = len([r for r in self.results if r.status == "FAIL"])
         unknown_tests = len([r for r in self.results if r.status == "UNKNOWN"])
         
-        print(f"\n📊 DIAGNOSTIC SUMMARY")
+        print("\n📊 DIAGNOSTIC SUMMARY")
         print("-" * 40)
         print(f"Total Tests: {total_tests}")
         print(f"✅ Passed: {passed_tests}")
@@ -441,7 +440,7 @@ class SensorTowerDiagnostics:
         print(f"❓ Unknown: {unknown_tests}")
         
         # Priority recommendations
-        print(f"\n🎯 PRIORITY ACTIONS")
+        print("\n🎯 PRIORITY ACTIONS")
         print("-" * 40)
         
         if any(r.issue_type == "endpoint_not_found" for r in self.results):

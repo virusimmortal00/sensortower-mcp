@@ -1,11 +1,11 @@
 [project]
 name = "sensortower-mcp"
-version = "1.2.13"
+version = "1.2.10"
 description = "Model Context Protocol server for Sensor Tower APIs using FastMCP"
 readme = "README-pypi.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastmcp>=2.11.1",
+    "fastmcp>=2.12.4",
     "httpx>=0.25.0",
     "python-dotenv>=1.0.0",
 ]
@@ -16,6 +16,7 @@ sensortower-mcp = "sensortower_mcp.server:cli"
 [project.optional-dependencies]
 test = [
     "aiohttp>=3.10.0",
+    "PyYAML>=6.0",
 ]
 
 [build-system]
@@ -37,3 +38,15 @@ exclude = [
     "__pycache__/",
     "main.py",  # Exclude old monolithic main.py
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.13.2",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "live_api: marks tests that exercise the live Sensor Tower API",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

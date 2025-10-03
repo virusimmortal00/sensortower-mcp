@@ -10,9 +10,12 @@ import argparse
 import asyncio
 import os
 import sys
+from typing import Any, Dict
+
 import httpx
 from fastmcp import FastMCP
-from typing import Dict, List, Optional, Any
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 # Try to load .env file if available
 try:
@@ -84,7 +87,6 @@ def top_in_app_purchases(
     Example:
     - Get IAP for iOS games: os="ios", app_ids="529479190,1262148500", country="US"
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -123,7 +125,6 @@ def get_creatives(
     Example:
     - get_creatives(os="ios", app_ids="835599320", start_date="2023-01-01", countries="US", networks="Admob")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -169,7 +170,6 @@ def get_impressions(
     Example:
     - get_impressions(os="ios", app_ids="284882215,1262148500", start_date="2023-01-01", end_date="2023-01-31", countries="US", networks="Facebook")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -223,7 +223,6 @@ def get_usage_active_users(
     Example:
     - get_usage_active_users(os="ios", app_ids="284882215,310633997", start_date="2021-01-01", end_date="2021-01-31", countries="US")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -274,7 +273,6 @@ def get_category_history(
     Example:
     - get_category_history(os="ios", app_ids="284882215", categories="6005", start_date="2024-01-01", end_date="2024-01-31")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -324,7 +322,6 @@ def compact_sales_report_estimates(
     Example:
     - compact_sales_report_estimates(os="ios", start_date="2024-01-01", end_date="2024-01-31", app_ids="284882215")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -370,7 +367,6 @@ def category_ranking_summary(
     Example:
     - category_ranking_summary(os="ios", app_id="284882215", country="US")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -409,7 +405,6 @@ def impressions_rank(
     Example:
     - impressions_rank(os="ios", app_ids="284882215,1262148500", start_date="2023-01-01", end_date="2023-01-31", countries="US", networks="Facebook")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -456,7 +451,6 @@ def app_analysis_retention(
     Example:
     - app_analysis_retention(os="ios", app_ids="284882215,310633997", date_granularity="all_time", start_date="2021-01-01")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -506,7 +500,6 @@ def downloads_by_sources(
     Example:
     - downloads_by_sources(os="unified", app_ids="55c5027502ac64f9c0001fa6", countries="WW", start_date="2023-01-01", end_date="2023-02-28")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -550,7 +543,6 @@ def app_analysis_demographics(
     Example:
     - app_analysis_demographics(os="ios", app_ids="284882215,310633997", date_granularity="quarterly", start_date="2021-01-01", end_date="2021-08-01")
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -583,7 +575,6 @@ def app_update_timeline(
     date_limit: str = "10"
 ) -> Dict[str, Any]:
     """Get app update history timeline."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -607,7 +598,6 @@ def version_history(
     country: str = "US"
 ) -> Dict[str, Any]:
     """Get version history for a particular app."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -632,7 +622,6 @@ def get_featured_today_stories(
     end_date: str = None
 ) -> Dict[str, Any]:
     """Retrieve featured today story metadata from App Store."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -657,7 +646,6 @@ def get_featured_apps(
     end_date: str = None
 ) -> Dict[str, Any]:
     """Retrieve apps featured on the App Store's Apps & Games pages."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -688,7 +676,6 @@ def get_featured_creatives(
     end_date: str = None
 ) -> Dict[str, Any]:
     """Retrieve the featured creatives and their positions within the App and Google Play store over time."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -721,7 +708,6 @@ def get_keywords(
     end_date: str = None
 ) -> Dict[str, Any]:
     """Get keyword rankings for apps."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -752,7 +738,6 @@ def get_reviews(
     rating: str = None
 ) -> Dict[str, Any]:
     """Get app reviews and ratings data."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -784,7 +769,6 @@ def research_keyword(
     page: int = None
 ) -> Dict[str, Any]:
     """Retrieve detailed information for any keyword, such as related search terms, traffic data, and ranking difficulty."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -846,7 +830,6 @@ def get_top_and_trending(
     - Top iOS games by downloads: os="ios", comparison_attribute="absolute", time_range="week", measure="units", category="6014", date="2024-01-01", regions="US"
     - Growing Android business apps: os="android", comparison_attribute="delta", time_range="month", measure="units", category="business", date="2024-01-01", regions="US,GB"
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -914,7 +897,6 @@ def get_top_publishers(
     - Top iOS game publishers by revenue: os="ios", comparison_attribute="absolute", time_range="month", measure="revenue", category="6014", date="2024-01-01", country="US"
     - Growing Android productivity publishers: os="android", comparison_attribute="delta", time_range="quarter", measure="units", category="productivity", date="2024-01-01"
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -953,7 +935,6 @@ def get_store_summary(
     countries: str = "US"
 ) -> Dict[str, Any]:
     """Get app store summary statistics."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -994,7 +975,6 @@ def analytics_metrics(
     
     Note: This is ONLY for your own connected apps via iTunes Connect.
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1039,7 +1019,6 @@ def sources_metrics(
     
     Note: This is ONLY for your own connected apps via iTunes Connect.
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1090,7 +1069,6 @@ def sales_reports(
     Note: This is ONLY for your own connected apps via iTunes Connect/Google Play.
     All revenue is Net and returned in cents.
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1140,7 +1118,6 @@ def unified_sales_reports(
     Note: This is ONLY for your own connected apps via iTunes Connect/Google Play.
     All revenue is Net and returned in cents.
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1206,7 +1183,6 @@ def usage_top_apps(
     - Top iOS apps by daily active users: os="ios", comparison_attribute="absolute", time_range="month", measure="DAU", date="2024-01-01", regions="US"
     - Growing Android social apps by MAU: os="android", comparison_attribute="delta", time_range="quarter", measure="MAU", date="2024-01-01", regions="US,GB", category="social"
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1258,7 +1234,6 @@ def get_app_metadata(
     - Get iOS app details: os="ios", app_ids="284882215,1262148500", country="US"
     - Get Android app with SDK data: os="android", app_ids="com.facebook.katana", include_sdk_data=True
     """
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1284,7 +1259,6 @@ def get_category_rankings(
     date: str
 ) -> Dict[str, Any]:
     """Get top ranking apps of a particular category and chart type."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1311,7 +1285,6 @@ def get_download_estimates(
     end_date: str = None
 ) -> Dict[str, Any]:
     """Fetch download estimates for apps by country and date."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1340,7 +1313,6 @@ def get_revenue_estimates(
     end_date: str = None
 ) -> Dict[str, Any]:
     """Fetch revenue estimates for apps by country and date."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1403,7 +1375,6 @@ def get_publisher_apps(
     include_count: bool = False
 ) -> Dict[str, Any]:
     """Retrieve a collection of apps for the specified publisher."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1440,7 +1411,6 @@ def get_unified_publisher_apps(
     unified_id: str
 ) -> Dict[str, Any]:
     """Retrieve unified publisher and all of its unified apps together with platform-specific apps."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1465,7 +1435,6 @@ def get_app_ids_by_category(
     limit: int = 1000
 ) -> Dict[str, Any]:
     """Retrieve a list of app IDs from a given release/updated date in a particular category."""
-    import asyncio
     if not sensor_tower_client:
         raise ValueError("Sensor Tower client not initialized")
     
@@ -1856,10 +1825,6 @@ def get_health_data() -> Dict[str, Any]:
         "tools_available": 40  # All available MCP tools including health check
     }
 
-# Add HTTP health check endpoint using custom route
-from starlette.requests import Request
-from starlette.responses import JSONResponse
-
 @mcp.custom_route("/health", methods=["GET"])
 async def health_endpoint(request: Request) -> JSONResponse:
     """HTTP health check endpoint"""
@@ -1887,7 +1852,7 @@ async def main():
     print(f"🚌 Transport: {args.transport}")
     if args.transport == "http":
         print(f"🌐 Port: {args.port}")
-    print(f"🔧 Available tools: 40")  # All MCP tools including health check
+    print("🔧 Available tools: 40")  # All MCP tools including health check
     
     try:
         if args.transport == "stdio":
@@ -1932,7 +1897,7 @@ def cli():
     print(f"🚌 Transport: {args.transport}")
     if args.transport == "http":
         print(f"🌐 Port: {args.port}")
-    print(f"🔧 Available tools: 40")  # All MCP tools including health check
+    print("🔧 Available tools: 40")  # All MCP tools including health check
     
     try:
         if args.transport == "stdio":

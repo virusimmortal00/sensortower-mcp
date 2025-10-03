@@ -6,11 +6,25 @@ Load testing script for sensortower-mcp to ensure it can handle production traff
 import asyncio
 import aiohttp
 import time
-import json
 import os
 import statistics
 from dataclasses import dataclass
 from typing import List, Dict, Any
+
+try:  # pragma: no cover - optional when running via pytest
+    from tests.conftest import MCP_JSON_HEADERS  # type: ignore
+except Exception:  # pragma: no cover - script execution fallback
+    MCP_JSON_HEADERS = {"Accept": "application/json, text/event-stream"}
+
+TOOL_ENDPOINT = os.getenv("MCP_TOOL_ENDPOINT", "/legacy/tools/invoke")
+
+try:  # pragma: no cover - optional when running via pytest
+    from tests.jsonrpc import build_tool_payload  # type: ignore
+except Exception:  # pragma: no cover - script execution fallback
+    def build_tool_payload(tool: str, arguments: dict | None = None, request_id: str | None = None) -> dict:
+        if arguments is None:
+            arguments = {}
+        return {"tool": tool, "arguments": arguments}
 
 # Try to load .env file if available
 try:
@@ -27,6 +41,8 @@ class TestResult:
     status_code: int
     error: str = ""
 
+TestResult.__test__ = False
+
 class LoadTester:
     def __init__(self, base_url: str, token: str = None):
         self.base_url = base_url
@@ -38,14 +54,22 @@ class LoadTester:
         start_time = time.time()
         
         try:
-            headers = {}
+            headers = dict(MCP_JSON_HEADERS)
             if self.token:
                 headers["Authorization"] = f"Bearer {self.token}"
             
-            async with session.post(f"{self.base_url}{endpoint}", 
-                                  json=payload, 
-                                  headers=headers,
-                                  timeout=aiohttp.ClientTimeout(total=30)) as response:
+            json_payload = payload
+            if endpoint == TOOL_ENDPOINT:
+                json_payload = build_tool_payload(
+                    payload["tool"], payload.get("arguments", {}),
+                )
+
+            async with session.post(
+                f"{self.base_url}{endpoint}",
+                json=json_payload,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as response:
                 await response.read()  # Consume response
                 response_time = time.time() - start_time
                 
@@ -67,8 +91,11 @@ class LoadTester:
         """Test health endpoint"""
         start_time = time.time()
         try:
-            async with session.get(f"{self.base_url}/health", 
-                                 timeout=aiohttp.ClientTimeout(total=10)) as response:
+            async with session.get(
+                f"{self.base_url}/health",
+                headers=MCP_JSON_HEADERS,
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as response:
                 await response.read()
                 response_time = time.time() - start_time
                 return TestResult(
@@ -100,7 +127,7 @@ class LoadTester:
             {
                 "name": "Get Country Codes",
                 "weight": 0.3,  # 30% of requests
-                "endpoint": "/mcp/tools/invoke",
+                "endpoint": TOOL_ENDPOINT,
                 "payload": {
                     "tool": "get_country_codes",
                     "arguments": {}
@@ -109,7 +136,7 @@ class LoadTester:
             {
                 "name": "Get Category IDs",
                 "weight": 0.2,  # 20% of requests
-                "endpoint": "/mcp/tools/invoke", 
+                "endpoint": TOOL_ENDPOINT, 
                 "payload": {
                     "tool": "get_category_ids",
                     "arguments": {"os": "ios"}
@@ -118,7 +145,7 @@ class LoadTester:
             {
                 "name": "Search Entities",
                 "weight": 0.1,  # 10% of requests (most expensive)
-                "endpoint": "/mcp/tools/invoke",
+                "endpoint": TOOL_ENDPOINT,
                 "payload": {
                     "tool": "search_entities",
                     "arguments": {
@@ -141,7 +168,7 @@ class LoadTester:
         while len(requests_to_make) < num_requests:
             requests_to_make.append(test_scenarios[0])  # Fill with health checks
         
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(headers=MCP_JSON_HEADERS) as session:
             # Create semaphore to limit concurrent connections
             semaphore = asyncio.Semaphore(num_concurrent)
             
@@ -170,8 +197,8 @@ class LoadTester:
         successful_requests = [r for r in self.results if r.success]
         failed_requests = [r for r in self.results if not r.success]
         
-        print(f"\n📊 Load Test Results")
-        print(f"=" * 50)
+        print("\n📊 Load Test Results")
+        print("=" * 50)
         print(f"Total Requests: {num_requests}")
         print(f"Concurrent Connections: {num_concurrent}")
         print(f"Total Time: {total_time:.2f}s")
@@ -181,7 +208,7 @@ class LoadTester:
         
         if successful_requests:
             response_times = [r.response_time for r in successful_requests]
-            print(f"\n⏱️  Response Time Statistics:")
+            print("\n⏱️  Response Time Statistics:")
             print(f"Average: {statistics.mean(response_times):.3f}s")
             print(f"Median: {statistics.median(response_times):.3f}s")
             print(f"95th percentile: {sorted(response_times)[int(len(response_times) * 0.95)]:.3f}s")
@@ -189,7 +216,7 @@ class LoadTester:
             print(f"Max: {max(response_times):.3f}s")
         
         if failed_requests:
-            print(f"\n❌ Failed Request Details:")
+            print("\n❌ Failed Request Details:")
             error_counts = {}
             for req in failed_requests:
                 key = f"Status {req.status_code}: {req.error}"
@@ -199,7 +226,7 @@ class LoadTester:
                 print(f"  {error}: {count} requests")
         
         # Performance recommendations
-        print(f"\n💡 Performance Assessment:")
+        print("\n💡 Performance Assessment:")
         if len(successful_requests) / num_requests >= 0.99:
             print("✅ Excellent reliability (>99% success rate)")
         elif len(successful_requests) / num_requests >= 0.95:
@@ -240,7 +267,7 @@ async def test_docker_container():
     tester.results = []
     
     # Medium load test
-    print(f"\n" + "="*50)
+    print("\n" + "="*50)
     await tester.run_concurrent_tests(num_concurrent=25, num_requests=250)
 
 async def test_pypi_http_server():

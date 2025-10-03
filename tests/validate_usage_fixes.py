@@ -7,10 +7,8 @@ with the fixes applied based on our 404 investigation.
 """
 
 import os
-import sys
 import json
 import requests
-from pathlib import Path
 
 # Try to load .env file if available
 try:
@@ -67,7 +65,7 @@ def test_usage_tools_fixes():
                 try:
                     error = response.json()
                     print(f"   🔍 Error: {json.dumps(error, indent=6)}")
-                except:
+                except Exception:
                     pass
                     
     except Exception as e:
@@ -102,7 +100,7 @@ def test_usage_tools_fixes():
                 try:
                     error = response.json()
                     print(f"   🔍 Error: {json.dumps(error, indent=6)}")
-                except:
+                except Exception:
                     pass
                     
     except Exception as e:
@@ -137,7 +135,7 @@ def test_usage_tools_fixes():
                 try:
                     error = response.json()
                     print(f"   🔍 Error: {json.dumps(error, indent=6)}")
-                except:
+                except Exception:
                     pass
                     
     except Exception as e:
@@ -161,7 +159,7 @@ def test_usage_tools_fixes():
         for tool, status, details in failed:
             print(f"   ❌ {tool}: {details}")
     
-    print(f"\n🎯 PROGRESS UPDATE:")
+    print("\n🎯 PROGRESS UPDATE:")
     if len(successful) == 3:
         print("🎉 ALL USAGE INTELLIGENCE TOOLS FIXED!")
         print("   • 404 endpoint errors resolved")

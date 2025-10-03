@@ -11,12 +11,11 @@ And compares their behavior side-by-side to validate fixes.
 
 import asyncio
 import importlib.util
-import json
 import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, Tuple
 import subprocess
 
 # Try to load .env file if available
@@ -216,7 +215,7 @@ class LocalVsPublishedTester:
             }),
             ("mcp_sensortower_get_creatives", {
                 "os": "ios", "app_ids": "284882215", "start_date": "2024-01-01",
-                "countries": "US", "networks": "facebook"
+                "countries": "US", "networks": "facebook", "ad_types": "video"
             }),
             ("mcp_sensortower_get_impressions", {
                 "os": "ios", "app_ids": "284882215", "start_date": "2024-01-01",
@@ -231,7 +230,8 @@ class LocalVsPublishedTester:
                 "end_date": "2024-01-07", "countries": "US"
             }),
             ("mcp_sensortower_get_category_history", {
-                "os": "ios", "app_ids": "284882215", "categories": "6005",
+                "os": "ios", "app_ids": "284882215", "category": "6005",
+                "chart_type_ids": "topfreeapplications",
                 "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"
             }),
             ("mcp_sensortower_app_analysis_retention", {
@@ -316,12 +316,14 @@ class LocalVsPublishedTester:
                 "country": "US", "date": "2024-01-15"
             }),
             ("mcp_sensortower_get_top_and_trending", {
-                "os": "ios", "category": "6005", "chart_type": "top",
-                "country": "US", "date": "2024-01-01"
+                "os": "ios", "comparison_attribute": "absolute", "time_range": "week",
+                "measure": "units", "category": 6005, "date": "2024-01-01",
+                "regions": "US", "device_type": "total"
             }),
             ("mcp_sensortower_get_top_publishers", {
-                "os": "ios", "category": "6005", "country": "US", 
-                "date": "2024-01-01", "metric": "downloads"
+                "os": "ios", "comparison_attribute": "absolute", "time_range": "month",
+                "measure": "revenue", "category": 6005, "date": "2024-01-01",
+                "country": "US"
             }),
             ("mcp_sensortower_get_store_summary", {
                 "os": "ios", "start_date": "2024-01-01", "end_date": "2024-01-07"
@@ -379,10 +381,10 @@ class LocalVsPublishedTester:
             print(f"   Your local fixes resolve {improvements} issues from the published version.")
         elif regressions > 0:
             print(f"\n{Colors.RED}⚠️  LOCAL VERSION HAS REGRESSIONS{Colors.END}")
-            print(f"   Consider reviewing recent changes.")
+            print("   Consider reviewing recent changes.")
         else:
             print(f"\n{Colors.BLUE}📋 VERSIONS ARE EQUIVALENT{Colors.END}")
-            print(f"   No significant differences detected.")
+            print("   No significant differences detected.")
         
         print(f"\n⏱️  Total runtime: {time.time() - self.start_time:.2f} seconds")
 
@@ -390,12 +392,12 @@ class LocalVsPublishedTester:
         """Run all comparison tests"""
         self.print_header("LOCAL vs PUBLISHED MCP PACKAGE COMPARISON")
         
-        print(f"🎯 Testing LOCAL development version vs PUBLISHED PyPI package")
+        print("🎯 Testing LOCAL development version vs PUBLISHED PyPI package")
         print(f"📦 Local: {'✅ Available' if self.local_tools else '❌ Failed to load'}")
         print(f"🌐 Published: {'✅ Available' if self.published_tools else '❌ Failed to load'}")
         
         if not self.local_tools or not self.published_tools:
-            print(f"\n❌ Cannot run comparison - missing tools")
+            print("\n❌ Cannot run comparison - missing tools")
             return False
         
         # Run all test categories
@@ -417,12 +419,12 @@ async def main():
         success = await tester.run_comparison_tests()
         
         if success:
-            print(f"\n🎉 Comparison completed successfully!")
+            print("\n🎉 Comparison completed successfully!")
         else:
-            print(f"\n💡 Comparison could not complete.")
+            print("\n💡 Comparison could not complete.")
             
     except KeyboardInterrupt:
-        print(f"\n⚠️  Tests interrupted by user")
+        print("\n⚠️  Tests interrupted by user")
         sys.exit(1)
     except Exception as e:
         print(f"\n💥 Unexpected error: {e}")

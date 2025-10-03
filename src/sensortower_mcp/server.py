@@ -4,9 +4,8 @@ Main server module for Sensor Tower MCP Server
 """
 
 import sys
-import asyncio
-import httpx
 from fastmcp import FastMCP
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -19,6 +18,7 @@ from .tools import (
     YourMetricsTools, SearchDiscoveryTools, UtilityTools
 )
 from .documentation import register_documentation
+from .prompts import register_prompts
 
 # Global variables for deferred initialization
 sensor_tower_client = None
@@ -28,7 +28,11 @@ class SensorTowerMCPServer:
     
     def __init__(self):
         self.args = parse_args()
-        self.mcp = FastMCP("Sensor Tower")
+        self.mcp = FastMCP(
+            "Sensor Tower",
+            on_duplicate_tools="error",
+            mask_error_details=True,
+        )
         self.client = None
         self.tools_registered = False
         
@@ -70,10 +74,13 @@ class SensorTowerMCPServer:
         
         # Register documentation resources
         register_documentation(self.mcp)
-        
+        # Register prompt templates
+        register_prompts(self.mcp)
+
         # Add HTTP health check endpoint
         self.add_health_endpoint()
-        
+        self.add_json_tool_endpoint()
+
         # Fix FastMCP HTTP transport parameter validation bug
         if self.args.transport == "http":
             self.patch_fastmcp_http_transport()
@@ -87,27 +94,30 @@ class SensorTowerMCPServer:
         
         from starlette.middleware.base import BaseHTTPMiddleware
         from starlette.requests import Request
-        from starlette.responses import Response
-        import json
         
         class ClaudeDesktopFixMiddleware(BaseHTTPMiddleware):
             async def dispatch(self, request: Request, call_next):
-                # Only process MCP endpoint requests
-                if request.url.path == '/mcp/' or request.url.path == '/mcp':
+                # Only process MCP endpoint requests (e.g. /mcp, /mcp/tools/invoke)
+                if request.url.path.startswith('/mcp'):
                     # Fix Accept header for Claude Desktop compatibility
                     headers = dict(request.headers)
                     accept_header = headers.get('accept', '')
                     
-                    # If Claude Desktop only sends application/json, add text/event-stream
-                    if accept_header == 'application/json':
+                    # If clients only send application/json (or */*) add text/event-stream
+                    if accept_header in {'application/json', '*/*', ''}:
                         # Create new headers with both mime types
                         new_headers = []
+                        accept_set = False
                         for name, value in request.headers.items():
                             if name.lower() == 'accept':
-                                new_headers.append((name.encode(), f"{value}, text/event-stream".encode()))
+                                new_headers.append((name.encode(), b"application/json, text/event-stream"))
+                                accept_set = True
                             else:
                                 new_headers.append((name.encode(), value.encode()))
                         
+                        if not accept_set:
+                            new_headers.append((b"accept", b"application/json, text/event-stream"))
+
                         # Create new scope with fixed headers
                         scope = request.scope.copy()
                         scope['headers'] = new_headers
@@ -123,6 +133,17 @@ class SensorTowerMCPServer:
         # Add the middleware to FastMCP's FastAPI app
         if hasattr(self.mcp, '_app'):
             self.mcp._app.add_middleware(ClaudeDesktopFixMiddleware)
+            try:
+                from starlette.middleware.cors import CORSMiddleware
+                self.mcp._app.add_middleware(
+                    CORSMiddleware,
+                    allow_origins=["*"],
+                    allow_methods=["*"],
+                    allow_headers=["*"]
+                )
+            except Exception:
+                # CORS is best-effort and only relevant for browser-based callers
+                pass
 
     def add_health_endpoint(self):
         """Add HTTP health check endpoint"""
@@ -137,6 +158,50 @@ class SensorTowerMCPServer:
                 "api_base_url": API_BASE_URL,
                 "tools_available": 40
             })
+
+    def add_json_tool_endpoint(self):
+        """Add legacy JSON endpoint that bypasses JSON-RPC session handling."""
+
+        from fastmcp.exceptions import NotFoundError
+
+        @self.mcp.custom_route("/legacy/tools/invoke", methods=["POST"])
+        async def invoke_tool(request: Request) -> JSONResponse:
+            payload = await request.json()
+            tool_name = payload.get("tool")
+            arguments = payload.get("arguments") or {}
+
+            if not isinstance(tool_name, str):
+                raise HTTPException(status_code=400, detail="Missing or invalid tool name")
+            if not isinstance(arguments, dict):
+                raise HTTPException(status_code=400, detail="Tool arguments must be an object")
+
+            try:
+                tool = await self.mcp.get_tool(tool_name)
+            except NotFoundError as exc:  # pragma: no cover - runtime check
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+            try:
+                result = await tool.run(arguments)
+            except Exception as exc:  # pragma: no cover - runtime failure
+                raise HTTPException(status_code=500, detail=f"Tool execution failed: {exc}") from exc
+
+            structured = getattr(result, "structured_content", None)
+            if structured is None:
+                content = getattr(result, "content", [])
+
+                def serialize(block):
+                    if hasattr(block, "model_dump"):
+                        return block.model_dump(mode="json")
+                    return block
+
+                structured = [serialize(block) for block in content]
+
+            response_body = {
+                "tool": tool_name,
+                "result": structured,
+            }
+
+            return JSONResponse(response_body)
     
     async def run_async(self):
         """Run server in async mode"""

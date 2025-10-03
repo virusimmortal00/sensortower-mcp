@@ -16,12 +16,11 @@ If you've fixed MCP wrapper issues locally, this test won't reflect those fixes.
 
 import asyncio
 import httpx
-import json
 import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any
 
 # Try to load .env file if available
 try:
@@ -147,7 +146,7 @@ class ComprehensiveTester:
                 # Advertising intelligence 
                 ("get_creatives", {
                     "os": "ios", "app_ids": "284882215", "start_date": "2024-01-01",
-                    "countries": "US", "networks": "facebook"
+                    "countries": "US", "networks": "facebook", "ad_types": "video"
                 }),
                 
                 # FIXED: impressions now uses network_analysis endpoint
@@ -166,7 +165,8 @@ class ComprehensiveTester:
                     "end_date": "2024-01-07", "countries": "US"
                 }),
                 ("get_category_history", {
-                    "os": "ios", "app_ids": "284882215", "categories": "6005",
+                    "os": "ios", "app_ids": "284882215", "category": "6005",
+                    "chart_type_ids": "topfreeapplications",
                     "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"
                 }),
                 ("app_analysis_retention", {
@@ -254,7 +254,8 @@ class ComprehensiveTester:
                 }),
                 ("get_top_and_trending", {
                     "os": "ios", "comparison_attribute": "absolute", "time_range": "week",
-                    "measure": "units", "category": "6005", "date": "2024-01-01", "regions": "US"
+                    "measure": "units", "category": "6005", "date": "2024-01-01",
+                    "regions": "US", "device_type": "total"
                 }),
                 ("get_top_publishers", {
                     "os": "ios", "comparison_attribute": "absolute", "time_range": "month",
@@ -399,9 +400,9 @@ class ComprehensiveTester:
                     self.print_test(endpoint, "PASS", f"Status: {response.status_code}", preview)
             
             elif response.status_code == 422:
-                self.print_test(endpoint, "WARN", f"422 - May need subscription or different parameters", "")
+                self.print_test(endpoint, "WARN", "422 - May need subscription or different parameters", "")
             elif response.status_code == 404:
-                self.print_test(endpoint, "FAIL", f"404 - Endpoint not found", "")
+                self.print_test(endpoint, "FAIL", "404 - Endpoint not found", "")
             else:
                 self.print_test(endpoint, "FAIL", f"HTTP {response.status_code}", response.text[:100])
                 
@@ -412,7 +413,7 @@ class ComprehensiveTester:
         """Run all comprehensive tests"""
         self.print_header("Sensor Tower MCP - Comprehensive Test Suite (All 40 Endpoints)")
         
-        print(f"🎯 Testing all 40 endpoints across 5 categories")
+        print("🎯 Testing all 40 endpoints across 5 categories")
         print(f"🔑 API Token: {'✅ Provided' if self.token else '❌ Missing'}")
         print(f"🌐 Base URL: {self.base_url}")
         
@@ -478,14 +479,14 @@ async def main():
         success = await tester.run_comprehensive_tests()
         
         if success:
-            print(f"\n🎉 All tests passed! System ready for production.")
+            print("\n🎉 All tests passed! System ready for production.")
             sys.exit(0)
         else:
-            print(f"\n💡 Some issues found. Check results above.")
+            print("\n💡 Some issues found. Check results above.")
             sys.exit(1)
             
     except KeyboardInterrupt:
-        print(f"\n⚠️  Tests interrupted by user")
+        print("\n⚠️  Tests interrupted by user")
         sys.exit(1)
     except Exception as e:
         print(f"\n💥 Unexpected error: {e}")

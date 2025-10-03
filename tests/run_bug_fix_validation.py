@@ -13,7 +13,6 @@ Run this to quickly verify the bug fixes are working.
 
 import asyncio
 import httpx
-import json
 import os
 import sys
 from pathlib import Path

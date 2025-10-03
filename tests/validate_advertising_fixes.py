@@ -7,10 +7,8 @@ with the fixes applied based on our 422 investigation.
 """
 
 import os
-import sys
 import json
 import requests
-from pathlib import Path
 
 # Try to load .env file if available
 try:
@@ -49,6 +47,7 @@ def test_advertising_tools_fixes():
             "end_date": "2024-01-07",
             "countries": "US",
             "networks": "Instagram",  # Valid network name
+            "ad_types": "video",
             "auth_token": token
         }
         
@@ -66,7 +65,7 @@ def test_advertising_tools_fixes():
                 try:
                     error = response.json()
                     print(f"   🔍 Error: {json.dumps(error, indent=6)}")
-                except:
+                except Exception:
                     pass
                     
     except Exception as e:
@@ -101,7 +100,7 @@ def test_advertising_tools_fixes():
                 try:
                     error = response.json()
                     print(f"   🔍 Error: {json.dumps(error, indent=6)}")
-                except:
+                except Exception:
                     pass
                     
     except Exception as e:
@@ -136,7 +135,7 @@ def test_advertising_tools_fixes():
                 try:
                     error = response.json()
                     print(f"   🔍 Error: {json.dumps(error, indent=6)}")
-                except:
+                except Exception:
                     pass
                     
     except Exception as e:
@@ -160,7 +159,7 @@ def test_advertising_tools_fixes():
         for tool, status, details in failed:
             print(f"   ❌ {tool}: {details}")
     
-    print(f"\n🎯 PROGRESS UPDATE:")
+    print("\n🎯 PROGRESS UPDATE:")
     if len(successful) == 3:
         print("🎉 ALL ADVERTISING INTELLIGENCE TOOLS FIXED!")
         print("   • 422 parameter errors resolved")

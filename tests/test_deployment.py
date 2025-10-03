@@ -5,15 +5,28 @@ Tests both PyPI package installation and Docker image functionality.
 """
 
 import asyncio
-import json
 import os
 import subprocess
 import sys
 import tempfile
-import time
 import httpx
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
+
+try:  # pragma: no cover - optional when running via pytest
+    from tests.conftest import MCP_JSON_HEADERS  # type: ignore
+except Exception:  # pragma: no cover - script execution fallback
+    MCP_JSON_HEADERS = {"Accept": "application/json, text/event-stream"}
+
+try:  # pragma: no cover - optional when running via pytest
+    from tests.jsonrpc import build_tool_payload  # type: ignore
+except Exception:  # pragma: no cover - script execution fallback
+    def build_tool_payload(tool: str, arguments: dict | None = None, request_id: str | None = None) -> dict:
+        if arguments is None:
+            arguments = {}
+        return {"tool": tool, "arguments": arguments}
+
+TOOL_ENDPOINT = os.getenv("MCP_TOOL_ENDPOINT", "/legacy/tools/invoke")
 
 # Try to load .env file if available
 try:
@@ -62,30 +75,38 @@ class TestLogger:
         failed = sum(1 for r in self.results if r[0] == "FAIL")
         warned = sum(1 for r in self.results if r[0] == "WARN")
         total = len(self.results)
-        
+
         print(f"\n{Colors.BOLD}Testing Summary:{Colors.END}")
         print(f"Total tests: {total}")
         print(f"{Colors.GREEN}Passed: {passed}{Colors.END}")
         print(f"{Colors.RED}Failed: {failed}{Colors.END}")
         print(f"{Colors.YELLOW}Warnings: {warned}{Colors.END}")
-        
+
         if failed > 0:
             print(f"\n{Colors.RED}Failed tests:{Colors.END}")
             for result in self.results:
                 if result[0] == "FAIL":
                     print(f"  - {result[1]}: {result[2]}")
 
+TestLogger.__test__ = False
+
 logger = TestLogger()
 
-def run_command(cmd: List[str], cwd: Optional[str] = None, timeout: int = 30) -> Tuple[bool, str, str]:
-    """Run a command and return success, stdout, stderr"""
+def run_command(
+    cmd: List[str],
+    cwd: Optional[str] = None,
+    timeout: int = 30,
+    env: Optional[dict[str, str]] = None,
+) -> Tuple[bool, str, str]:
+    """Run a command and return success, stdout, stderr."""
     try:
         result = subprocess.run(
             cmd, 
             capture_output=True, 
             text=True, 
             timeout=timeout,
-            cwd=cwd
+            cwd=cwd,
+            env=env,
         )
         return result.returncode == 0, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
@@ -123,7 +144,7 @@ async def test_pypi_package():
         if not success:
             logger.failure("PyPI package installation", stderr)
             return
-        logger.success("PyPI package installation", f"Installed successfully")
+        logger.success("PyPI package installation", "Installed successfully")
         
         # Test 3: Verify CLI availability
         success, stdout, stderr = run_command([str(python_path), "-c", "import sys; sys.path.insert(0, '.'); import main; print('Import successful')"])
@@ -158,7 +179,7 @@ async def test_pypi_package():
             
             # Test health endpoint
             try:
-                async with httpx.AsyncClient() as client:
+                async with httpx.AsyncClient(headers=MCP_JSON_HEADERS) as client:
                     response = await client.get("http://localhost:8667/health", timeout=5)
                     if response.status_code == 200:
                         logger.success("HTTP server startup", f"Health check returned: {response.json()}")
@@ -227,7 +248,7 @@ async def test_docker_image():
     
     # Test 6: Test HTTP endpoint
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=MCP_JSON_HEADERS) as client:
             response = await client.get("http://localhost:8668/health", timeout=10)
             if response.status_code == 200:
                 data = response.json()
@@ -275,7 +296,7 @@ async def test_api_endpoints_comprehensive(base_url: str, token: str) -> bool:
     """Comprehensive test of all 27 API endpoints"""
     logger.header("Comprehensive API Endpoint Testing")
     
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=60.0, headers=MCP_JSON_HEADERS) as client:
         # Test utility endpoints (no token required)
         utility_endpoints = [
             ("get_country_codes", {}),
@@ -286,10 +307,10 @@ async def test_api_endpoints_comprehensive(base_url: str, token: str) -> bool:
         
         for tool_name, args in utility_endpoints:
             try:
-                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
-                    "tool": tool_name,
-                    "arguments": args
-                })
+                response = await client.post(
+                    f"{base_url}{TOOL_ENDPOINT}",
+                    json=build_tool_payload(tool_name, args),
+                )
                 if response.status_code == 200:
                     logger.success(f"Utility endpoint: {tool_name}")
                 else:
@@ -306,11 +327,19 @@ async def test_api_endpoints_comprehensive(base_url: str, token: str) -> bool:
             ("top_in_app_purchases", {"os": "ios", "app_ids": "284882215", "country": "US"}),
             ("compact_sales_report_estimates", {"os": "ios", "start_date": "2024-01-01", "end_date": "2024-01-07", "app_ids": "284882215", "countries": "US"}),
             ("category_ranking_summary", {"os": "ios", "app_id": "284882215", "country": "US"}),
-            ("get_creatives", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "countries": "US", "networks": "Facebook"}),
+            ("get_creatives", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "countries": "US", "networks": "Facebook", "ad_types": "video"}),
             ("get_impressions", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US", "networks": "Facebook"}),
             ("impressions_rank", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"}),
             ("get_usage_active_users", {"os": "ios", "app_ids": "284882215", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"}),
-            ("get_category_history", {"os": "ios", "app_ids": "284882215", "categories": "6005", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"}),
+            ("get_category_history", {
+                "os": "ios",
+                "app_ids": "284882215",
+                "category": "6005",
+                "chart_type_ids": "topfreeapplications",
+                "start_date": "2024-01-01",
+                "end_date": "2024-01-07",
+                "countries": "US"
+            }),
             ("app_analysis_retention", {"os": "ios", "app_ids": "284882215", "date_granularity": "all_time", "start_date": "2024-01-01"}),
             ("downloads_by_sources", {"os": "unified", "app_ids": "55c5027502ac64f9c0001fa6", "countries": "US", "start_date": "2024-01-01", "end_date": "2024-01-07"}),
             ("app_analysis_demographics", {"os": "ios", "app_ids": "284882215", "date_granularity": "all_time", "start_date": "2024-01-01"}),
@@ -320,10 +349,10 @@ async def test_api_endpoints_comprehensive(base_url: str, token: str) -> bool:
         
         for tool_name, args in app_analysis_endpoints:
             try:
-                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
-                    "tool": tool_name,
-                    "arguments": args
-                })
+                response = await client.post(
+                    f"{base_url}{TOOL_ENDPOINT}",
+                    json=build_tool_payload(tool_name, args),
+                )
                 if response.status_code == 200:
                     logger.success(f"App Analysis: {tool_name}")
                 else:
@@ -341,10 +370,10 @@ async def test_api_endpoints_comprehensive(base_url: str, token: str) -> bool:
         
         for tool_name, args in store_marketing_endpoints:
             try:
-                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
-                    "tool": tool_name,
-                    "arguments": args
-                })
+                response = await client.post(
+                    f"{base_url}{TOOL_ENDPOINT}",
+                    json=build_tool_payload(tool_name, args),
+                )
                 if response.status_code == 200:
                     logger.success(f"Store Marketing: {tool_name}")
                 else:
@@ -355,17 +384,26 @@ async def test_api_endpoints_comprehensive(base_url: str, token: str) -> bool:
         # Test Market Analysis endpoints (4 total)
         market_analysis_endpoints = [
             ("get_category_rankings", {"os": "ios", "category": "6005", "chart_type": "topfreeapplications", "country": "US", "date": "2024-01-15"}),
-            ("get_top_and_trending", {"os": "ios", "category": "6005", "country": "US", "date": "2024-01-15"}),
+            ("get_top_and_trending", {
+                "os": "ios",
+                "comparison_attribute": "absolute",
+                "time_range": "week",
+                "measure": "units",
+                "category": 6005,
+                "date": "2024-01-01",
+                "regions": "US",
+                "device_type": "total"
+            }),
             ("get_top_publishers", {"os": "ios", "category": "6005", "country": "US", "date": "2024-01-15"}),
             ("get_store_summary", {"os": "ios", "start_date": "2024-01-01", "end_date": "2024-01-07", "countries": "US"})
         ]
         
         for tool_name, args in market_analysis_endpoints:
             try:
-                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
-                    "tool": tool_name,
-                    "arguments": args
-                })
+                response = await client.post(
+                    f"{base_url}{TOOL_ENDPOINT}",
+                    json=build_tool_payload(tool_name, args),
+                )
                 if response.status_code == 200:
                     logger.success(f"Market Analysis: {tool_name}")
                 else:

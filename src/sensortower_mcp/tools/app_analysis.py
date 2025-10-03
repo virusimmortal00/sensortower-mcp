@@ -1,737 +1,861 @@
 #!/usr/bin/env python3
-"""
-App Analysis API tools for Sensor Tower MCP Server
-"""
+"""App Analysis API tools for Sensor Tower MCP Server."""
 
-import httpx
-from typing import Dict, Any, Optional, Annotated
+from typing import Annotated, Literal, Optional, Union
+
 from fastmcp import FastMCP
-from ..base import SensorTowerTool
+from fastmcp.exceptions import ToolError
+from pydantic import Field
+
+from ..base import SensorTowerTool, validate_date_format, validate_os_parameter
+
 
 class AppAnalysisTools(SensorTowerTool):
-    """Tools for App Analysis API endpoints"""
-    
-    def register_tools(self, mcp: FastMCP):
-        """Register all app analysis tools with FastMCP"""
+    """Tools for App Analysis API endpoints."""
+
+    category = "AppAnalysis"
+
+    def register_tools(self, mcp: FastMCP) -> None:
+        """Register all app analysis tools with FastMCP."""
         
-        @mcp.tool
-        def top_in_app_purchases(
-            os: Annotated[str, "Operating system - 'ios' or 'android'"],
-            app_ids: Annotated[str, "Comma-separated app IDs (max 100 per call)"],
-            country: Annotated[str, "Country code"] = "US"
-        ) -> Dict[str, Any]:
-            """
-            Retrieve top in-app purchases for the requested app IDs.
-            
-            Examples:
-            - iOS games: os="ios", app_ids="529479190,1262148500", country="US"
-            - Android apps: os="android", app_ids="com.facebook.katana", country="US"
-            
-            Note: iOS uses integer app IDs, Android uses string package names.
-            """
-            async def _get_data():
-                params = {
-                    "app_ids": app_ids,
-                    "country": country
-                }
-                return await self.make_request(f"/v1/{os}/apps/top_in_app_purchases", params)
-            
-            return self.create_task(_get_data())
+        @self.tool(
+            mcp,
+            name="top_in_app_purchases",
+            title="Top In-App Purchases",
+        )
+        async def top_in_app_purchases(
+            os: Annotated[
+                Literal["ios", "android"],
+                Field(description="Operating system for the requested apps"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs (max 100 per call)", min_length=1),
+            ],
+            country: Annotated[
+                str,
+                Field(description="ISO 3166-1 alpha-2 country code", min_length=2, max_length=2),
+            ] = "US",
+        ) -> dict:
+            """Retrieve top in-app purchases for the requested app IDs."""
 
-        @mcp.tool
-        def get_creatives(
-            os: str,
-            app_ids: str,
-            start_date: str,
-            countries: str,
-            networks: str,
-            ad_types: str,
-            end_date: str = None
-        ) -> Dict[str, Any]:
-            """
-            Fetch advertising creatives for apps with Share of Voice and publisher data.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - app_ids: Comma-separated app IDs to return creatives for
-            - start_date: Start date in YYYY-MM-DD format
-            - countries: Comma-separated country codes (e.g. "US,GB,DE")
-            - networks: Comma-separated ad networks (e.g. "Instagram,Admob,Unity")
-            - ad_types: Comma-separated ad types (e.g. "video,image,playable")
-            - end_date: Optional end date in YYYY-MM-DD format (defaults to today)
-            
-            Examples:
-            - iOS app creatives: os="ios", app_ids="835599320", start_date="2023-01-01", countries="US", networks="Instagram", ad_types="video"
-            - Android unified: os="android", app_ids="com.zhiliaoapp.musically", start_date="2023-01-01", countries="US,GB", networks="Admob,Instagram", ad_types="video,image"
-            
-            Note: Valid networks: Adcolony, Admob, Applovin, Chartboost, Instagram, Mopub, Pinterest, Snapchat, Supersonic, Tapjoy, TikTok, Unity, Vungle, Youtube.
-            Facebook is NOT supported by this endpoint.
-            """
-            async def _get_data():
-                # Valid networks for creatives endpoint (same as network_analysis)
-                valid_networks = {
-                    "Adcolony", "Admob", "Applovin", "Chartboost", "Instagram", 
-                    "Mopub", "Pinterest", "Snapchat", "Supersonic", "Tapjoy", 
-                    "TikTok", "Unity", "Vungle", "Youtube"
-                }
-                
-                # Network normalization and filtering
-                network_mapping = {
-                    "unity": "Unity", 
-                    "google": "Youtube",
-                    "youtube": "Youtube",
-                    "admob": "Admob",
-                    "applovin": "Applovin",
-                    "chartboost": "Chartboost",
-                    "instagram": "Instagram",
-                    "snapchat": "Snapchat",
-                    "tiktok": "TikTok",
-                    "mopub": "Mopub",
-                    "tapjoy": "Tapjoy",
-                    "vungle": "Vungle",
-                    "pinterest": "Pinterest",
-                    "adcolony": "Adcolony",
-                    "supersonic": "Supersonic"
-                }
-                
-                # Filter and normalize networks
-                normalized_networks = []
-                if networks:
-                    network_list = [n.strip() for n in networks.split(',')]
-                    for network in network_list:
-                        normalized_network = None
-                        if network in valid_networks:
-                            normalized_network = network
-                        elif network.lower() in network_mapping:
-                            normalized_network = network_mapping[network.lower()]
-                        
-                        if normalized_network and normalized_network in valid_networks:
-                            normalized_networks.append(normalized_network)
-                        elif network.lower() == "facebook":
-                            # Skip Facebook - not supported
-                            continue
-                        else:
-                            normalized_networks.append(network)
-                
-                params = {
-                    "app_ids": app_ids,
-                    "start_date": start_date,
-                    "countries": countries,
-                    "networks": ",".join(normalized_networks),
-                    "ad_types": ad_types
-                }
-                if end_date:
-                    params["end_date"] = end_date
-                
-                return await self.make_request(f"/v1/{os}/ad_intel/creatives", params)
-            
-            return self.create_task(_get_data())
+            os_value = validate_os_parameter(os, ["ios", "android"])
+            params = {
+                "app_ids": app_ids,
+                "country": country,
+            }
+            return await self.make_request(
+                f"/v1/{os_value}/apps/top_in_app_purchases",
+                params,
+            )
 
-        @mcp.tool
-        def get_impressions(
-            os: str,
-            app_ids: str,
-            start_date: str,
-            end_date: str,
-            countries: str,
-            networks: str,
-            date_granularity: str = "daily"
-        ) -> Dict[str, Any]:
-            """
-            Get advertising impressions data for apps.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - app_ids: Comma-separated app IDs (max 5 per call)
-            - start_date: Start date in YYYY-MM-DD format (minimum: 2018-01-01)
-            - end_date: End date in YYYY-MM-DD format
-            - countries: Comma-separated country codes (required)
-            - networks: Comma-separated ad networks (required)
-            - date_granularity: "daily", "weekly", "monthly" (maps to API period parameter)
-            
-            Examples:
-            - Daily iOS impressions: os="ios", app_ids="284882215", start_date="2023-01-01", end_date="2023-01-31", countries="US", networks="Instagram,Unity,Youtube"
-            
-            Note: Valid networks for this endpoint: Adcolony, Admob, Applovin, Chartboost, Instagram, Mopub, Pinterest, Snapchat, Supersonic, Tapjoy, TikTok, Unity, Vungle, Youtube.
-            Facebook is NOT supported by the network_analysis endpoint.
-            """
-            async def _get_data():
-                # Map period - API only supports day, week, month
-                period_mapping = {
-                    "daily": "day",
-                    "weekly": "week", 
-                    "monthly": "month"
-                }
-                period = period_mapping.get(date_granularity, "day")
-                
-                # Valid networks for network_analysis endpoint (from API error message)
-                valid_networks = {
-                    "Adcolony", "Admob", "Applovin", "Chartboost", "Instagram", 
-                    "Mopub", "Pinterest", "Snapchat", "Supersonic", "Tapjoy", 
-                    "TikTok", "Unity", "Vungle", "Youtube"
-                }
-                
-                # Network mapping with endpoint-specific filtering
-                network_mapping = {
-                    "unity": "Unity", 
-                    "google": "Youtube",  # Common alias
-                    "youtube": "Youtube",
-                    "admob": "Admob",
-                    "applovin": "Applovin",
-                    "chartboost": "Chartboost",
-                    "instagram": "Instagram",
-                    "snapchat": "Snapchat",
-                    "tiktok": "TikTok",
-                    "mopub": "Mopub",
-                    "tapjoy": "Tapjoy",
-                    "vungle": "Vungle",
-                    "pinterest": "Pinterest",
-                    "adcolony": "Adcolony",
-                    "supersonic": "Supersonic"
-                    # Note: Facebook is NOT supported by network_analysis endpoint
-                }
-                
-                # Normalize and filter network names
-                normalized_networks = []
-                if networks:
-                    network_list = [n.strip() for n in networks.split(',')]
-                    for network in network_list:
-                        # Try exact match first, then lowercase match
-                        normalized_network = None
-                        if network in valid_networks:
-                            normalized_network = network
-                        elif network.lower() in network_mapping:
-                            normalized_network = network_mapping[network.lower()]
-                        
-                        # Only add if it's in the valid networks list
-                        if normalized_network and normalized_network in valid_networks:
-                            normalized_networks.append(normalized_network)
-                        elif network.lower() == "facebook":
-                            # Skip Facebook with warning - not supported by this endpoint
-                            continue
-                        else:
-                            # Keep original if no mapping found (let API validate)
-                            normalized_networks.append(network)
-                
-                params = {
-                    "app_ids": app_ids,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "period": period,
-                    "countries": countries,
-                    "networks": ",".join(normalized_networks)
-                }
-                
-                response = await self.make_request(f"/v1/{os}/ad_intel/network_analysis", params)
-                # Wrap list response in dictionary for MCP client compatibility
-                return {
-                    "data": response,
-                    "total_records": len(response) if isinstance(response, list) else 0,
-                    "summary": f"Retrieved {len(response) if isinstance(response, list) else 0} SOV data points"
-                }
-            
-            return self.create_task(_get_data())
+        @self.tool(
+            mcp,
+            name="get_creatives",
+            title="Get Creatives",
+        )
+        async def get_creatives(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system context for the creatives request"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs to return creatives for", min_length=1),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            countries: Annotated[
+                str,
+                Field(description="Comma-separated ISO country codes"),
+            ],
+            networks: Annotated[
+                str,
+                Field(description="Comma-separated ad networks"),
+            ],
+            ad_types: Annotated[
+                str,
+                Field(description="Comma-separated ad types such as video,image,playable"),
+            ],
+            end_date: Annotated[
+                Optional[str],
+                Field(description="Optional end date in YYYY-MM-DD format"),
+            ] = None,
+        ) -> dict:
+            """Fetch advertising creatives for apps with Share of Voice and publisher data."""
 
-        @mcp.tool
-        def get_usage_active_users(
-            os: str,
-            app_ids: str,
-            start_date: str,
-            end_date: str,
-            countries: str = "US",
-            date_granularity: str = "monthly",
-            data_model: str = "DM_2025_Q2"
-        ) -> Dict[str, Any]:
-            """
-            Get usage intelligence active users data.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - app_ids: Comma-separated app IDs (max 500 per call)
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format
-            - countries: Comma-separated country codes (defaults to "US", supports "WW" for worldwide)
-            - date_granularity: "daily", "weekly", or "monthly" (maps to API time_period: day/week/month)
-            - data_model: "DM_2025_Q2" (new model) or "DM_2025_Q1" (legacy)
-            
-            Examples:
-            - Monthly iOS active users: os="ios", app_ids="284882215", start_date="2024-01-01", end_date="2024-01-31", countries="US"
-            - Daily Android users: os="android", app_ids="com.facebook.katana", start_date="2024-01-01", end_date="2024-01-07", date_granularity="daily"
-            
-            Note: date_granularity is automatically mapped to the API's 'time_period' parameter.
-            """
-            async def _get_data():
-                time_period_mapping = {
-                    "daily": "day",
-                    "weekly": "week", 
-                    "monthly": "month"
-                }
-                time_period = time_period_mapping.get(date_granularity, "month")
-                
-                params = {
-                    "app_ids": app_ids,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "countries": countries,
-                    "time_period": time_period,
-                    "data_model": data_model
-                }
-                return await self.make_request(f"/v1/{os}/usage/active_users", params)
-            
-            return self.create_task(_get_data())
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date) if end_date else None
 
-        @mcp.tool
-        def get_category_history(
-            os: str,
-            app_ids: str,
-            categories: str,
-            start_date: str,
-            end_date: str,
-            countries: str = "US"
-        ) -> Dict[str, Any]:
-            """
-            Get category ranking history for apps.
-            
-            Parameters:
-            - os: Operating system - "ios" or "android"
-            - app_ids: Comma-separated app IDs
-            - categories: Comma-separated category IDs
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format
-            - countries: Comma-separated country codes (defaults to "US")
-            
-            Examples:
-            - iOS social apps: os="ios", app_ids="284882215", categories="6005", start_date="2024-01-01", end_date="2024-01-31", countries="US"
-            - Android business: os="android", app_ids="com.facebook.katana", categories="business", start_date="2024-01-01", end_date="2024-01-31"
-            """
-            async def _get_data():
-                params = {
-                    "app_ids": app_ids,
-                    "categories": categories,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "countries": countries
-                }
-                return await self.make_request(f"/v1/{os}/category/category_history", params)
-            
-            return self.create_task(_get_data())
+            valid_networks = {
+                "Adcolony",
+                "Admob",
+                "Applovin",
+                "Chartboost",
+                "Instagram",
+                "Mopub",
+                "Pinterest",
+                "Snapchat",
+                "Supersonic",
+                "Tapjoy",
+                "TikTok",
+                "Unity",
+                "Vungle",
+                "Youtube",
+            }
+            network_mapping = {
+                "unity": "Unity",
+                "google": "Youtube",
+                "youtube": "Youtube",
+                "admob": "Admob",
+                "applovin": "Applovin",
+                "chartboost": "Chartboost",
+                "instagram": "Instagram",
+                "snapchat": "Snapchat",
+                "tiktok": "TikTok",
+                "mopub": "Mopub",
+                "tapjoy": "Tapjoy",
+                "vungle": "Vungle",
+                "pinterest": "Pinterest",
+                "adcolony": "Adcolony",
+                "supersonic": "Supersonic",
+            }
 
-        @mcp.tool
-        def compact_sales_report_estimates(
-            os: str,
-            start_date: str,
-            end_date: str,
-            app_ids: str = None,
-            publisher_ids: str = None,
-            unified_app_ids: str = None,
-            unified_publisher_ids: str = None,
-            categories: str = None,
-            countries: str = "US",
-            date_granularity: str = "daily",
-            data_model: str = "DM_2025_Q2"
-        ) -> Dict[str, Any]:
-            """
-            Get download and revenue estimates in compact format.
-            
-            Parameters:
-            - os: Operating system - "ios" or "android"
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format
-            - app_ids: Comma-separated app IDs (optional)
-            - publisher_ids: Comma-separated publisher IDs (optional)
-            - unified_app_ids: Comma-separated unified app IDs (optional)
-            - unified_publisher_ids: Comma-separated unified publisher IDs (optional)
-            - categories: Comma-separated category IDs (optional)
-            - countries: Comma-separated country codes (defaults to "US")
-            - date_granularity: "daily", "weekly", "monthly", or "quarterly"
-            - data_model: "DM_2025_Q2" (new model) or "DM_2025_Q1" (legacy)
-            
-            Examples:
-            - App estimates: os="ios", app_ids="284882215", start_date="2024-01-01", end_date="2024-01-31", countries="US"
-            - Category data: os="android", categories="business", start_date="2024-01-01", end_date="2024-01-31"
-            
-            Note: All revenues are returned in cents.
-            """
-            async def _get_data():
-                params = {
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "countries": countries,
-                    "date_granularity": date_granularity,
-                    "data_model": data_model
-                }
-                
-                optional_params = {
-                    "app_ids": app_ids,
-                    "publisher_ids": publisher_ids,
-                    "unified_app_ids": unified_app_ids,
-                    "unified_publisher_ids": unified_publisher_ids,
-                    "categories": categories
-                }
-                
-                for key, value in optional_params.items():
-                    if value:
-                        params[key] = value
-                
-                return await self.make_request(f"/v1/{os}/compact_sales_report_estimates", params)
-            
-            return self.create_task(_get_data())
+            normalized_networks: list[str] = []
+            for network in (value.strip() for value in networks.split(",") if value.strip()):
+                normalized = None
+                if network in valid_networks:
+                    normalized = network
+                elif network.lower() in network_mapping:
+                    normalized = network_mapping[network.lower()]
 
-        @mcp.tool
-        def category_ranking_summary(
-            os: str,
-            app_id: str,
-            country: str
-        ) -> Dict[str, Any]:
-            """
-            Get today's category ranking summary for a particular app.
-            
-            Parameters:
-            - os: Operating system - "ios" or "android"
-            - app_id: Single app ID
-            - country: Country code
-            
-            Examples:
-            - iOS app ranking: os="ios", app_id="284882215", country="US"
-            - Android app ranking: os="android", app_id="com.facebook.katana", country="US"
-            """
-            async def _get_data():
-                params = {
-                    "app_id": app_id,
-                    "country": country
-                }
-                return await self.make_request(f"/v1/{os}/category/category_ranking_summary", params)
-            
-            return self.create_task(_get_data())
+                if normalized and normalized in valid_networks:
+                    normalized_networks.append(normalized)
+                elif network.lower() != "facebook":
+                    normalized_networks.append(network)
 
-        @mcp.tool
-        def impressions_rank(
-            os: str,
-            app_ids: str,
-            start_date: str,
-            end_date: str,
-            countries: str,
-            networks: str = None
-        ) -> Dict[str, Any]:
-            """
-            Get advertising impressions rank data for apps.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - app_ids: Comma-separated app IDs
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format
-            - countries: Comma-separated country codes
-            - networks: Comma-separated ad networks (optional)
-            
-            Examples:
-            - iOS impressions rank: os="ios", app_ids="284882215", start_date="2024-01-01", end_date="2024-01-31", countries="US"
-            - Multi-network rank: os="unified", app_ids="5823dd570211a6d33a0003a3", start_date="2024-01-01", end_date="2024-01-31", countries="US", networks="Facebook,Instagram,Admob"
-            
-            Note: This endpoint supports more networks than network_analysis, including Facebook, Meta Audience Network, Moloco, Digital Turbine, and others.
-            Network support varies by endpoint - impressions_rank has broader network coverage than network_analysis.
-            """
-            async def _get_data():
-                params = {
-                    "app_ids": app_ids,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "countries": countries,
-                    "period": "day"
-                }
-                if networks:
-                    params["networks"] = networks
-                
-                response = await self.make_request(f"/v1/{os}/ad_intel/network_analysis/rank", params)
-                # Wrap list response in dictionary for MCP client compatibility
-                return {
-                    "data": response,
-                    "total_records": len(response) if isinstance(response, list) else 0,
-                    "summary": f"Retrieved {len(response) if isinstance(response, list) else 0} rank data points"
-                }
-            
-            return self.create_task(_get_data())
+            params = {
+                "app_ids": app_ids,
+                "start_date": start_value,
+                "countries": countries,
+                "networks": ",".join(normalized_networks),
+                "ad_types": ad_types,
+            }
+            if end_value:
+                params["end_date"] = end_value
 
-        @mcp.tool
-        def app_analysis_retention(
-            os: str,
-            app_ids: str,
-            date_granularity: str,
-            start_date: str,
-            end_date: str = None,
-            country: str = None
-        ) -> Dict[str, Any]:
-            """
-            Get retention analysis data for apps.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - app_ids: Comma-separated app IDs
-            - date_granularity: Time granularity for data aggregation
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format (optional, defaults to 2024-01-31)
-            - country: Country code (optional)
-            
-            Examples:
-            - iOS app retention: os="ios", app_ids="284882215", date_granularity="monthly", start_date="2024-01-01"
-            - Android with country: os="android", app_ids="com.facebook.katana", date_granularity="weekly", start_date="2024-01-01", country="US"
-            
-            Note: Provides retention data from day 1 to day 90, along with baseline retention.
-            """
-            async def _get_data():
-                actual_end_date = end_date or "2024-01-31"
-                
-                params = {
-                    "app_ids": app_ids,
-                    "date_granularity": date_granularity,
-                    "start_date": start_date,
-                    "end_date": actual_end_date
-                }
-                if country:
-                    params["country"] = country
-                
-                return await self.make_request(f"/v1/{os}/usage/retention", params)
-            
-            return self.create_task(_get_data())
+            return await self.make_request(
+                f"/v1/{os_value}/ad_intel/creatives",
+                params,
+            )
 
-        @mcp.tool
-        def downloads_by_sources(
-            os: str,
-            app_ids: str,
-            countries: str,
-            start_date: str,
-            end_date: str,
-            date_granularity: str = "monthly"
-        ) -> Dict[str, Any]:
-            """
-            Get app downloads by sources (organic, paid, browser).
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified" (filters data but always expects unified app IDs)
-            - app_ids: Comma-separated UNIFIED app IDs (regardless of OS parameter)
-            - countries: Comma-separated country codes
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format
-            - date_granularity: "daily", "weekly", "monthly", or "quarterly" (defaults to "monthly")
-            
-            Examples:
-            - iOS data: os="ios", app_ids="55c530a702ac64f9c0002dff", countries="US", start_date="2024-01-01", end_date="2024-01-31"
-            - Android data: os="android", app_ids="55c530a702ac64f9c0002dff", countries="US,GB,DE", start_date="2024-01-01", end_date="2024-01-31", date_granularity="weekly"
-            
-            Note: Always use unified app IDs regardless of OS parameter. Returns percentages and absolute values for organic, paid, and browser download sources.
-            """
-            async def _get_data():
-                params = {
-                    "app_ids": app_ids,
-                    "countries": countries,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "date_granularity": date_granularity
-                }
-                return await self.make_request(f"/v1/{os}/downloads_by_sources", params)
-            
-            return self.create_task(_get_data())
+        @self.tool(
+            mcp,
+            name="get_impressions",
+            title="Get Impressions",
+        )
+        async def get_impressions(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system context for impressions data"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs (max 5 per call)", min_length=1),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[str, Field(description="End date in YYYY-MM-DD format")],
+            countries: Annotated[
+                str,
+                Field(description="Comma-separated ISO country codes"),
+            ],
+            networks: Annotated[
+                str,
+                Field(description="Comma-separated ad networks"),
+            ],
+            date_granularity: Annotated[
+                Literal["daily", "weekly", "monthly"],
+                Field(description="Granularity for the impressions data"),
+            ] = "daily",
+        ) -> dict:
+            """Get advertising impressions data for apps."""
 
-        @mcp.tool
-        def app_analysis_demographics(
-            os: str,
-            app_ids: str,
-            date_granularity: str,
-            start_date: str,
-            end_date: str = None,
-            country: str = None
-        ) -> Dict[str, Any]:
-            """
-            Get demographic analysis data for apps.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - app_ids: Comma-separated app IDs
-            - date_granularity: Time granularity for data aggregation
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format (optional, defaults to 2024-01-31)
-            - country: Country code (optional)
-            
-            Examples:
-            - iOS demographics: os="ios", app_ids="284882215", date_granularity="monthly", start_date="2024-01-01"
-            - Android with country: os="android", app_ids="com.facebook.katana", date_granularity="weekly", start_date="2024-01-01", country="US"
-            
-            Note: Provides demographic breakdown by gender and age range.
-            """
-            async def _get_data():
-                actual_end_date = end_date or "2024-01-31"
-                
-                params = {
-                    "app_ids": app_ids,
-                    "date_granularity": date_granularity,
-                    "start_date": start_date,
-                    "end_date": actual_end_date
-                }
-                if country:
-                    params["country"] = country
-                
-                return await self.make_request(f"/v1/{os}/usage/demographics", params)
-            
-            return self.create_task(_get_data())
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date)
+            period = {
+                "daily": "day",
+                "weekly": "week",
+                "monthly": "month",
+            }[date_granularity]
 
-        @mcp.tool
-        def app_update_timeline(
-            os: str,
-            app_id: str,
-            country: str = "US",
-            date_limit: str = "10"
-        ) -> Dict[str, Any]:
-            """
-            Get app update history timeline.
-            
-            Parameters:
-            - os: Operating system - "ios" or "android"
-            - app_id: Single app ID
-            - country: Country code (defaults to "US")
-            - date_limit: Number of updates to retrieve (defaults to "10")
-            
-            Examples:
-            - iOS app updates: os="ios", app_id="284882215", country="US", date_limit="20"
-            - Android app history: os="android", app_id="com.facebook.katana", country="US"
-            """
-            async def _get_data():
-                params = {
-                    "app_id": app_id,
-                    "country": country,
-                    "date_limit": date_limit
-                }
-                return await self.make_request(f"/v1/{os}/app_update/get_app_update_history", params)
-            
-            return self.create_task(_get_data())
+            valid_networks = {
+                "Adcolony",
+                "Admob",
+                "Applovin",
+                "Chartboost",
+                "Instagram",
+                "Mopub",
+                "Pinterest",
+                "Snapchat",
+                "Supersonic",
+                "Tapjoy",
+                "TikTok",
+                "Unity",
+                "Vungle",
+                "Youtube",
+            }
+            network_mapping = {
+                "unity": "Unity",
+                "google": "Youtube",
+                "youtube": "Youtube",
+                "admob": "Admob",
+                "applovin": "Applovin",
+                "chartboost": "Chartboost",
+                "instagram": "Instagram",
+                "snapchat": "Snapchat",
+                "tiktok": "TikTok",
+                "mopub": "Mopub",
+                "tapjoy": "Tapjoy",
+                "vungle": "Vungle",
+                "pinterest": "Pinterest",
+                "adcolony": "Adcolony",
+                "supersonic": "Supersonic",
+            }
 
-        @mcp.tool
-        def version_history(
-            os: Annotated[str, "Operating system - 'ios' or 'android'"],
-            app_id: Annotated[str, "Single app ID"],
-            country: Annotated[str, "Country code (defaults to 'US')"] = "US"
-        ) -> Dict[str, Any]:
-            """
-            Get version history for a particular app.
-            
-            Examples:
-            - iOS version history: os="ios", app_id="284882215", country="US"
-            - Android versions: os="android", app_id="com.facebook.katana", country="GB"
-            """
-            async def _get_data():
-                params = {
-                    "app_id": app_id,
-                    "country": country
-                }
-                return await self.make_request(f"/v1/{os}/apps/version_history", params)
-            
-            return self.create_task(_get_data())
+            normalized_networks: list[str] = []
+            for network in (value.strip() for value in networks.split(',') if value.strip()):
+                normalized = None
+                if network in valid_networks:
+                    normalized = network
+                elif network.lower() in network_mapping:
+                    normalized = network_mapping[network.lower()]
 
-        @mcp.tool
-        def get_app_metadata(
-            os: Annotated[str, "Operating system - 'ios' or 'android'"],
-            app_ids: Annotated[str, "Comma-separated app IDs (max 100 per call)"],
-            country: Annotated[str, "Country code for localized data"] = "US",
-            include_sdk_data: Annotated[bool, "Include SDK insights data (requires subscription)"] = False
-        ) -> Dict[str, Any]:
-            """
-            Get comprehensive app metadata including name, publisher, categories, description, screenshots, ratings, etc.
+                if normalized and normalized in valid_networks:
+                    normalized_networks.append(normalized)
+                elif network.lower() != "facebook":
+                    normalized_networks.append(network)
 
-            Examples:
-            - Get iOS app details: os="ios", app_ids="284882215,1262148500", country="US"
-            - Get Android app with SDK data: os="android", app_ids="com.facebook.katana", include_sdk_data=True
-            """
-            async def _get_data():
-                params = {
-                    "app_ids": app_ids,
-                    "country": country,
-                    "include_sdk_data": include_sdk_data
-                }
-                return await self.make_request(f"/v1/{os}/apps", params)
-            
-            return self.create_task(_get_data())
+            params = {
+                "app_ids": app_ids,
+                "start_date": start_value,
+                "end_date": end_value,
+                "period": period,
+                "countries": countries,
+                "networks": ','.join(normalized_networks),
+            }
 
-        @mcp.tool
-        def get_download_estimates(
-            os: str,
-            app_ids: str,
-            start_date: str,
-            end_date: str,
-            countries: str = None,
-            date_granularity: str = "daily",
-            data_model: str = "DM_2025_Q2"
-        ) -> Dict[str, Any]:
-            """
-            Fetch download estimates for apps by country and date.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - app_ids: Comma-separated app IDs
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format
-            - countries: Comma-separated country codes (optional)
-            - date_granularity: "daily", "weekly", "monthly", or "quarterly"
-            - data_model: "DM_2025_Q2" (new model) or "DM_2025_Q1" (legacy)
-            
-            Examples:
-            - iOS downloads: os="ios", app_ids="284882215", start_date="2024-01-01", end_date="2024-01-31"
-            - Android downloads: os="android", app_ids="com.facebook.katana", start_date="2024-01-01", end_date="2024-01-31", countries="US,GB"
-            """
-            async def _get_data():
-                params = {
-                    "app_ids": app_ids,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "date_granularity": date_granularity,
-                    "data_model": data_model
-                }
-                if countries:
-                    params["countries"] = countries
-                
-                return await self.make_request(f"/v1/{os}/sales_report_estimates", params)
-            
-            return self.create_task(_get_data())
-
-        @mcp.tool
-        def get_revenue_estimates(
-            os: str,
-            app_ids: str,
-            start_date: str,
-            end_date: str,
-            countries: str = None,
-            date_granularity: str = "daily",
-            data_model: str = "DM_2025_Q2"
-        ) -> Dict[str, Any]:
-            """
-            Fetch revenue estimates for apps by country and date.
-            
-            Parameters:
-            - os: Operating system - "ios", "android", or "unified"
-            - app_ids: Comma-separated app IDs
-            - start_date: Start date in YYYY-MM-DD format
-            - end_date: End date in YYYY-MM-DD format
-            - countries: Comma-separated country codes (optional)
-            - date_granularity: "daily", "weekly", "monthly", or "quarterly"
-            - data_model: "DM_2025_Q2" (new model) or "DM_2025_Q1" (legacy)
-            
-            Examples:
-            - iOS revenue: os="ios", app_ids="284882215", start_date="2024-01-01", end_date="2024-01-31"
-            - Android revenue: os="android", app_ids="com.facebook.katana", start_date="2024-01-01", end_date="2024-01-31", countries="US,GB"
-            
-            Note: All revenues are returned in cents.
-            """
-            async def _get_data():
-                params = {
-                    "app_ids": app_ids,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "date_granularity": date_granularity,
-                    "data_model": data_model
-                }
-                if countries:
-                    params["countries"] = countries
-                
-                return await self.make_request(f"/v1/{os}/sales_report_estimates", params)
-            
-            return self.create_task(_get_data())
+            return await self.make_request(
+                f"/v1/{os_value}/ad_intel/network_analysis",
+                params,
+            )
 
 
+        @self.tool(
+            mcp,
+            name="get_usage_active_users",
+            title="Get Usage Active Users",
+        )
+        async def get_usage_active_users(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system for usage metrics"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs (max 500 per call)", min_length=1),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[str, Field(description="End date in YYYY-MM-DD format")],
+            countries: Annotated[
+                str,
+                Field(description="Comma-separated ISO country codes (use WW for worldwide)"),
+            ] = "US",
+            date_granularity: Annotated[
+                Literal["daily", "weekly", "monthly"],
+                Field(description="Granularity for usage metrics"),
+            ] = "monthly",
+            data_model: Annotated[
+                Literal["DM_2025_Q2", "DM_2025_Q1"],
+                Field(description="Usage intelligence data model version"),
+            ] = "DM_2025_Q2",
+        ) -> dict:
+            """Get usage intelligence active users data."""
+
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date)
+
+            time_period = {
+                "daily": "day",
+                "weekly": "week",
+                "monthly": "month",
+            }[date_granularity]
+
+            params = {
+                "app_ids": app_ids,
+                "start_date": start_value,
+                "end_date": end_value,
+                "countries": countries,
+                "time_period": time_period,
+                "data_model": data_model,
+            }
+
+            return await self.make_request(
+                f"/v1/{os_value}/usage/active_users",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="get_category_history",
+            title="Get Category History",
+        )
+        async def get_category_history(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system for category rankings"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs", min_length=1),
+            ],
+            category: Annotated[
+                Union[int, str],
+                Field(description="Category identifier"),
+            ],
+            chart_type_ids: Annotated[
+                str,
+                Field(description="Comma-separated chart type identifiers", min_length=1),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[str, Field(description="End date in YYYY-MM-DD format")],
+            countries: Annotated[
+                str,
+                Field(description="Comma-separated ISO country codes"),
+            ] = "US",
+        ) -> dict:
+            """Get category ranking history for apps."""
+
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date)
+
+            normalized_chart_types = ",".join(
+                value.strip()
+                for value in chart_type_ids.split(",")
+                if value.strip()
+            )
+            if not normalized_chart_types:
+                raise ToolError("chart_type_ids must include at least one chart type identifier")
+
+            params = {
+                "app_ids": app_ids,
+                "category": category,
+                "chart_type_ids": normalized_chart_types,
+                "start_date": start_value,
+                "end_date": end_value,
+                "countries": countries,
+            }
+
+            return await self.make_request(
+                f"/v1/{os_value}/category/category_history",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="compact_sales_report_estimates",
+            title="Compact Sales Report Estimates",
+        )
+        async def compact_sales_report_estimates(
+            os: Annotated[
+                Literal["ios", "android"],
+                Field(description="Operating system for the compact sales report"),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[str, Field(description="End date in YYYY-MM-DD format")],
+            app_ids: Annotated[
+                Optional[str],
+                Field(description="Comma-separated app IDs", default=None),
+            ] = None,
+            publisher_ids: Annotated[
+                Optional[str],
+                Field(description="Comma-separated publisher IDs", default=None),
+            ] = None,
+            unified_app_ids: Annotated[
+                Optional[str],
+                Field(description="Comma-separated unified app IDs", default=None),
+            ] = None,
+            unified_publisher_ids: Annotated[
+                Optional[str],
+                Field(description="Comma-separated unified publisher IDs", default=None),
+            ] = None,
+            categories: Annotated[
+                Optional[str],
+                Field(description="Comma-separated category IDs", default=None),
+            ] = None,
+            countries: Annotated[
+                str,
+                Field(description="Comma-separated ISO country codes"),
+            ] = "US",
+            date_granularity: Annotated[
+                Literal["daily", "weekly", "monthly", "quarterly"],
+                Field(description="Granularity for the report"),
+            ] = "daily",
+            data_model: Annotated[
+                Literal["DM_2025_Q2", "DM_2025_Q1"],
+                Field(description="Data model version"),
+            ] = "DM_2025_Q2",
+        ) -> dict:
+            """Get download and revenue estimates in compact format."""
+
+            os_value = validate_os_parameter(os, ["ios", "android"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date)
+
+            params = {
+                "start_date": start_value,
+                "end_date": end_value,
+                "countries": countries,
+                "date_granularity": date_granularity,
+                "data_model": data_model,
+            }
+
+            optional_params = {
+                "app_ids": app_ids,
+                "publisher_ids": publisher_ids,
+                "unified_app_ids": unified_app_ids,
+                "unified_publisher_ids": unified_publisher_ids,
+                "categories": categories,
+            }
+
+            for key, value in optional_params.items():
+                if value:
+                    params[key] = value
+
+            return await self.make_request(
+                f"/v1/{os_value}/compact_sales_report_estimates",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="category_ranking_summary",
+            title="Category Ranking Summary",
+        )
+        async def category_ranking_summary(
+            os: Annotated[
+                Literal["ios", "android"],
+                Field(description="Operating system for category summary"),
+            ],
+            app_id: Annotated[str, Field(description="Single app identifier", min_length=1)],
+            country: Annotated[
+                str,
+                Field(description="ISO 3166-1 alpha-2 country code", min_length=2, max_length=2),
+            ],
+        ) -> dict:
+            """Get today's category ranking summary for a particular app."""
+
+            os_value = validate_os_parameter(os, ["ios", "android"])
+            params = {
+                "app_id": app_id,
+                "country": country,
+            }
+
+            return await self.make_request(
+                f"/v1/{os_value}/category/category_ranking_summary",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="impressions_rank",
+            title="Impressions Rank",
+        )
+        async def impressions_rank(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system scope for impressions rank"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs", min_length=1),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[str, Field(description="End date in YYYY-MM-DD format")],
+            countries: Annotated[
+                str,
+                Field(description="Comma-separated ISO country codes"),
+            ],
+            networks: Annotated[
+                Optional[str],
+                Field(description="Comma-separated ad networks", default=None),
+            ] = None,
+        ) -> dict:
+            """Get advertising impressions rank data for apps."""
+
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date)
+
+            params = {
+                "app_ids": app_ids,
+                "start_date": start_value,
+                "end_date": end_value,
+                "countries": countries,
+                "period": "day",
+            }
+            if networks:
+                params["networks"] = networks
+
+            response = await self.make_request(
+                f"/v1/{os_value}/ad_intel/network_analysis/rank",
+                params,
+            )
+
+            metadata = {}
+            if isinstance(response, list):
+                metadata["summary"] = f"Retrieved {len(response)} rank data points"
+
+            return self.normalize_result(response, metadata)
+
+        @self.tool(
+            mcp,
+            name="app_analysis_retention",
+            title="App Retention",
+        )
+        async def app_analysis_retention(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system for retention data"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs", min_length=1),
+            ],
+            date_granularity: Annotated[
+                Literal["daily", "weekly", "monthly"],
+                Field(description="Time granularity for retention metrics"),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[
+                Optional[str],
+                Field(description="End date in YYYY-MM-DD format", default=None),
+            ] = None,
+            country: Annotated[
+                Optional[str],
+                Field(description="Optional ISO country code", default=None),
+            ] = None,
+        ) -> dict:
+            """Get retention analysis data for apps."""
+
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            actual_end_value = validate_date_format(end_date) if end_date else "2024-01-31"
+
+            params = {
+                "app_ids": app_ids,
+                "date_granularity": date_granularity,
+                "start_date": start_value,
+                "end_date": actual_end_value,
+            }
+            if country:
+                params["country"] = country
+
+            return await self.make_request(
+                f"/v1/{os_value}/usage/retention",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="downloads_by_sources",
+            title="Downloads By Sources",
+        )
+        async def downloads_by_sources(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system filter for downloads"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated unified app IDs", min_length=1),
+            ],
+            countries: Annotated[
+                str,
+                Field(description="Comma-separated ISO country codes"),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[str, Field(description="End date in YYYY-MM-DD format")],
+            date_granularity: Annotated[
+                Literal["daily", "weekly", "monthly", "quarterly"],
+                Field(description="Granularity for download sources"),
+            ] = "monthly",
+        ) -> dict:
+            """Get app downloads by sources (organic, paid, browser)."""
+
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date)
+
+            params = {
+                "app_ids": app_ids,
+                "countries": countries,
+                "start_date": start_value,
+                "end_date": end_value,
+                "date_granularity": date_granularity,
+            }
+
+            return await self.make_request(
+                f"/v1/{os_value}/downloads_by_sources",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="app_analysis_demographics",
+            title="App Demographics",
+        )
+        async def app_analysis_demographics(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system for demographics"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs", min_length=1),
+            ],
+            date_granularity: Annotated[
+                Literal["daily", "weekly", "monthly"],
+                Field(description="Granularity for demographic aggregation"),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[
+                Optional[str],
+                Field(description="End date in YYYY-MM-DD format", default=None),
+            ] = None,
+            country: Annotated[
+                Optional[str],
+                Field(description="Optional ISO country code", default=None),
+            ] = None,
+        ) -> dict:
+            """Get demographic analysis data for apps."""
+
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            actual_end_value = validate_date_format(end_date) if end_date else "2024-01-31"
+
+            params = {
+                "app_ids": app_ids,
+                "date_granularity": date_granularity,
+                "start_date": start_value,
+                "end_date": actual_end_value,
+            }
+            if country:
+                params["country"] = country
+
+            return await self.make_request(
+                f"/v1/{os_value}/usage/demographics",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="app_update_timeline",
+            title="App Update Timeline",
+        )
+        async def app_update_timeline(
+            os: Annotated[
+                Literal["ios", "android"],
+                Field(description="Operating system for the app"),
+            ],
+            app_id: Annotated[str, Field(description="Single app identifier", min_length=1)],
+            country: Annotated[
+                str,
+                Field(description="ISO 3166-1 alpha-2 country code", min_length=2, max_length=2),
+            ] = "US",
+            date_limit: Annotated[
+                int,
+                Field(description="Number of updates to retrieve", ge=1, le=100),
+            ] = 10,
+        ) -> dict:
+            """Get app update history timeline."""
+
+            os_value = validate_os_parameter(os, ["ios", "android"])
+            params = {
+                "app_id": app_id,
+                "country": country,
+                "date_limit": date_limit,
+            }
+
+            return await self.make_request(
+                f"/v1/{os_value}/app_update/get_app_update_history",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="version_history",
+            title="Version History",
+        )
+        async def version_history(
+            os: Annotated[
+                Literal["ios", "android"],
+                Field(description="Operating system for the app"),
+            ],
+            app_id: Annotated[str, Field(description="Single app identifier", min_length=1)],
+            country: Annotated[
+                str,
+                Field(description="ISO 3166-1 alpha-2 country code", min_length=2, max_length=2),
+            ] = "US",
+        ) -> dict:
+            """Get version history for a particular app."""
+
+            os_value = validate_os_parameter(os, ["ios", "android"])
+            params = {
+                "app_id": app_id,
+                "country": country,
+            }
+
+            return await self.make_request(
+                f"/v1/{os_value}/apps/version_history",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="get_app_metadata",
+            title="Get App Metadata",
+        )
+        async def get_app_metadata(
+            os: Annotated[
+                Literal["ios", "android"],
+                Field(description="Operating system for the requested apps"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs (max 100 per call)", min_length=1),
+            ],
+            country: Annotated[
+                str,
+                Field(description="ISO 3166-1 alpha-2 country code", min_length=2, max_length=2),
+            ] = "US",
+            include_sdk_data: Annotated[
+                bool,
+                Field(description="Include SDK insights data (requires subscription)"),
+            ] = False,
+        ) -> dict:
+            """Get comprehensive app metadata including descriptions, ratings, and more."""
+
+            os_value = validate_os_parameter(os, ["ios", "android"])
+            params = {
+                "app_ids": app_ids,
+                "country": country,
+                "include_sdk_data": include_sdk_data,
+            }
+
+            return await self.make_request(
+                f"/v1/{os_value}/apps",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="get_download_estimates",
+            title="Get Download Estimates",
+        )
+        async def get_download_estimates(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system scope for download estimates"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs", min_length=1),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[str, Field(description="End date in YYYY-MM-DD format")],
+            countries: Annotated[
+                Optional[str],
+                Field(description="Comma-separated ISO country codes", default=None),
+            ] = None,
+            date_granularity: Annotated[
+                Literal["daily", "weekly", "monthly", "quarterly"],
+                Field(description="Granularity for download estimates"),
+            ] = "daily",
+            data_model: Annotated[
+                Literal["DM_2025_Q2", "DM_2025_Q1"],
+                Field(description="Data model version"),
+            ] = "DM_2025_Q2",
+        ) -> dict:
+            """Fetch download estimates for apps by country and date."""
+
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date)
+
+            params = {
+                "app_ids": app_ids,
+                "start_date": start_value,
+                "end_date": end_value,
+                "date_granularity": date_granularity,
+                "data_model": data_model,
+            }
+            if countries:
+                params["countries"] = countries
+
+            return await self.make_request(
+                f"/v1/{os_value}/sales_report_estimates",
+                params,
+            )
+
+        @self.tool(
+            mcp,
+            name="get_revenue_estimates",
+            title="Get Revenue Estimates",
+        )
+        async def get_revenue_estimates(
+            os: Annotated[
+                Literal["ios", "android", "unified"],
+                Field(description="Operating system scope for revenue estimates"),
+            ],
+            app_ids: Annotated[
+                str,
+                Field(description="Comma-separated app IDs", min_length=1),
+            ],
+            start_date: Annotated[str, Field(description="Start date in YYYY-MM-DD format")],
+            end_date: Annotated[str, Field(description="End date in YYYY-MM-DD format")],
+            countries: Annotated[
+                Optional[str],
+                Field(description="Comma-separated ISO country codes", default=None),
+            ] = None,
+            date_granularity: Annotated[
+                Literal["daily", "weekly", "monthly", "quarterly"],
+                Field(description="Granularity for revenue estimates"),
+            ] = "daily",
+            data_model: Annotated[
+                Literal["DM_2025_Q2", "DM_2025_Q1"],
+                Field(description="Data model version"),
+            ] = "DM_2025_Q2",
+        ) -> dict:
+            """Fetch revenue estimates for apps by country and date."""
+
+            os_value = validate_os_parameter(os, ["ios", "android", "unified"])
+            start_value = validate_date_format(start_date)
+            end_value = validate_date_format(end_date)
+
+            params = {
+                "app_ids": app_ids,
+                "start_date": start_value,
+                "end_date": end_value,
+                "date_granularity": date_granularity,
+                "data_model": data_model,
+            }
+            if countries:
+                params["countries"] = countries
+
+            return await self.make_request(
+                f"/v1/{os_value}/sales_report_estimates",
+                params,
+            )

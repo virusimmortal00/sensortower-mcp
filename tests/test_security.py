@@ -11,7 +11,22 @@ import asyncio
 import httpx
 import re
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import List, Tuple
+
+try:  # pragma: no cover - optional when running via pytest
+    from tests.conftest import MCP_JSON_HEADERS  # type: ignore
+except Exception:  # pragma: no cover - script execution fallback
+    MCP_JSON_HEADERS = {"Accept": "application/json, text/event-stream"}
+
+TOOL_ENDPOINT = os.getenv("MCP_TOOL_ENDPOINT", "/legacy/tools/invoke")
+
+try:  # pragma: no cover - optional when running via pytest
+    from tests.jsonrpc import build_tool_payload  # type: ignore
+except Exception:  # pragma: no cover - script execution fallback
+    def build_tool_payload(tool: str, arguments: dict | None = None, request_id: str | None = None) -> dict:
+        if arguments is None:
+            arguments = {}
+        return {"tool": tool, "arguments": arguments}
 
 # Try to load .env file if available
 try:
@@ -205,20 +220,20 @@ class SecurityTester:
             await asyncio.sleep(3)
             
             # Test unauthorized access
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(headers=MCP_JSON_HEADERS) as client:
                 try:
                     # Try to access without proper authentication
                     response = await client.post(
-                        "http://localhost:8669/mcp/tools/invoke",
-                        json={
-                            "tool": "search_entities",
-                            "arguments": {
+                        f"http://localhost:8669{TOOL_ENDPOINT}",
+                        json=build_tool_payload(
+                            "search_entities",
+                            {
                                 "os": "ios",
                                 "entity_type": "app",
-                                "term": "test"
-                            }
-                        },
-                        timeout=5
+                                "term": "test",
+                            },
+                        ),
+                        timeout=5,
                     )
                     
                     if response.status_code == 401 or response.status_code == 403:
@@ -440,7 +455,7 @@ class SecurityTester:
                 print("🔴 POOR - Significant security concerns")
         
         # Recommendations
-        print(f"\n💡 RECOMMENDATIONS:")
+        print("\n💡 RECOMMENDATIONS:")
         if len(self.issues) > 0:
             print("  1. Address all HIGH severity security issues")
         if len(self.warnings) > 0:
@@ -472,13 +487,13 @@ async def main():
     
     # Exit with appropriate code
     if any(issue["severity"] == "HIGH" for issue in tester.issues):
-        print(f"\n🔴 Security testing failed due to HIGH severity issues")
+        print("\n🔴 Security testing failed due to HIGH severity issues")
         exit(1)
     elif len(tester.issues) > 0:
-        print(f"\n🟡 Security testing completed with issues to address")
+        print("\n🟡 Security testing completed with issues to address")
         exit(0)
     else:
-        print(f"\n🟢 Security testing passed!")
+        print("\n🟢 Security testing passed!")
         exit(0)
 
 if __name__ == "__main__":

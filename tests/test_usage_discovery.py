@@ -9,10 +9,9 @@ Key finding: usage/active_users returned 422 "end_date missing" instead of 404
 """
 
 import os
-import sys
 import json
 import requests
-from pathlib import Path
+import pytest
 
 # Try to load .env file if available
 try:
@@ -26,8 +25,7 @@ def test_usage_endpoint_discovery():
     
     token = os.getenv("SENSOR_TOWER_API_TOKEN")
     if not token:
-        print("⚠️  No API token - cannot test usage discovery")
-        return False
+        pytest.skip("SENSOR_TOWER_API_TOKEN is required for live API checks")
     
     base_url = "https://api.sensortower.com"
     
@@ -74,7 +72,7 @@ def test_usage_endpoint_discovery():
     ]
     
     successful_tests = []
-    
+
     for test in endpoints_to_test:
         print(f"🔍 Testing: {test['name']}")
         print(f"   Endpoint: {test['endpoint']}")
@@ -87,47 +85,31 @@ def test_usage_endpoint_discovery():
             
             response = requests.get(url, params=params, timeout=30)
             
-            if response.status_code == 200:
-                print("✅ SUCCESS: Endpoint working!")
-                try:
-                    data = response.json()
-                    print(f"   📊 Response: {type(data)}")
-                    if isinstance(data, dict):
-                        print(f"   📋 Keys: {list(data.keys())}")
-                    elif isinstance(data, list):
-                        print(f"   📦 Items: {len(data)}")
-                    successful_tests.append(test)
-                except:
-                    print("   📊 Response: Non-JSON data received")
-                    successful_tests.append(test)
-                    
-            elif response.status_code == 422:
-                print("❌ 422 Parameter Error")
-                try:
-                    error_data = response.json()
-                    print(f"   🔍 Error details: {json.dumps(error_data, indent=6)}")
-                    # Parse specific error to understand missing parameters
-                    if "errors" in error_data:
-                        for error in error_data["errors"]:
-                            if "title" in error:
-                                print(f"   💡 Specific issue: {error['title']}")
-                except:
-                    print(f"   🔍 Raw error: {response.text[:200]}")
-                    
-            elif response.status_code == 404:
-                print("❌ Still 404 - endpoint doesn't exist")
-                
-            elif response.status_code == 401:
-                print("❌ 401 Unauthorized - auth issue")
-                
-            elif response.status_code == 403:
-                print("❌ 403 Forbidden - access issue")
-                
-            else:
-                print(f"❌ Unexpected status: {response.status_code}")
-                
+            if response.status_code != 200:
+                details = response.text[:200]
+                if response.status_code == 422:
+                    try:
+                        details = json.dumps(response.json(), indent=2)[:200]
+                    except Exception:  # pragma: no cover
+                        details = response.text[:200]
+                pytest.fail(
+                    f"{test['name']} returned {response.status_code}: {details}"
+                )
+
+            print("✅ SUCCESS: Endpoint working!")
+            try:
+                data = response.json()
+                print(f"   📊 Response: {type(data)}")
+                if isinstance(data, dict):
+                    print(f"   📋 Keys: {list(data.keys())}")
+                elif isinstance(data, list):
+                    print(f"   📦 Items: {len(data)}")
+            except Exception:  # pragma: no cover - defensive
+                print("   📊 Response: Non-JSON data received")
+            successful_tests.append(test)
+
         except Exception as e:
-            print(f"❌ Request error: {e}")
+            pytest.fail(f"Request error for {test['name']}: {e}")
         
         print()  # Add spacing between tests
     
@@ -136,35 +118,9 @@ def test_usage_endpoint_discovery():
     print("📊 USAGE INTELLIGENCE DISCOVERY RESULTS")
     print("=" * 60)
     
-    if successful_tests:
-        print(f"🎉 BREAKTHROUGH: {len(successful_tests)} endpoint(s) working!")
-        for test in successful_tests:
-            print(f"   ✅ {test['name']}: {test['endpoint']}")
-        
-        print(f"\n🔧 REQUIRED FIXES FOR MCP TOOLS:")
-        print("1. Update endpoint URLs from /usage_intelligence/ to /usage/")
-        print("2. Ensure end_date parameter is always provided")
-        print("3. Test with proper parameter combinations")
-        
-    else:
-        print("⚠️  No working endpoints found")
-        print("\n💡 POSSIBLE REASONS:")
-        print("• Still missing required parameters")
-        print("• Different parameter names needed")
-        print("• Premium access required")
-        print("• Features deprecated/unavailable")
-    
-    print(f"\n🎯 NEXT STEPS:")
-    if successful_tests:
-        print("1. Apply endpoint URL fixes to MCP tools")
-        print("2. Update parameter requirements") 
-        print("3. Test all usage intelligence tools")
-    else:
-        print("1. Continue parameter investigation")
-        print("2. Check API documentation")
-        print("3. Consider premium access requirements")
-        
-    return len(successful_tests) > 0
+    assert len(successful_tests) == len(endpoints_to_test), (
+        "Some usage endpoints failed", successful_tests
+    )
 
 def main():
     """Run usage intelligence discovery test"""
@@ -173,14 +129,17 @@ def main():
     print("Testing endpoint pattern discovery from 404 investigation")
     print()
     
-    success = test_usage_endpoint_discovery()
-    
-    if success:
-        print("\n🎉 Usage intelligence endpoints discovered!")
+    try:
+        test_usage_endpoint_discovery()
+    except pytest.SkipTest as exc:  # pragma: no cover - CLI convenience
+        print(f"\n⚠️  {exc.msg}")
         return 0
-    else:
-        print("\n⚠️  No working endpoints found - continue investigation")
+    except AssertionError as exc:  # pragma: no cover - CLI convenience
+        print(f"\n⚠️  Discovery incomplete - {exc}")
         return 1
+
+    print("\n🎉 Usage intelligence endpoints discovered!")
+    return 0
 
 if __name__ == "__main__":
     exit(main())

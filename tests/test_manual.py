@@ -7,9 +7,27 @@ Run this after deployment to verify basic functionality.
 import asyncio
 import json
 import os
+from typing import Any
+
 import httpx
-import sys
-from typing import Dict, Any
+import pytest
+
+pytestmark = pytest.mark.skip(reason="Manual validation script; invoke via __main__ instead of pytest")
+
+try:  # pragma: no cover - optional when running via pytest
+    from tests.conftest import MCP_JSON_HEADERS  # type: ignore
+except Exception:  # pragma: no cover - script execution fallback
+    MCP_JSON_HEADERS = {"Accept": "application/json, text/event-stream"}
+
+try:  # pragma: no cover - optional when running via pytest
+    from tests.jsonrpc import build_tool_payload  # type: ignore
+except Exception:  # pragma: no cover - script execution fallback
+    def build_tool_payload(tool: str, arguments: dict | None = None, request_id: str | None = None) -> dict:
+        if arguments is None:
+            arguments = {}
+        return {"tool": tool, "arguments": arguments}
+
+TOOL_ENDPOINT = os.getenv("MCP_TOOL_ENDPOINT", "/legacy/tools/invoke")
 
 # Try to load .env file if available
 try:
@@ -27,15 +45,24 @@ def print_result(test_name: str, success: bool, data: Any = None):
         print(f"   Response: {response_str}...")
     print()
 
+
+def as_json(response: httpx.Response) -> Any:
+    """Attempt to decode a response body as JSON, fallback to text."""
+    try:
+        return response.json()
+    except Exception:
+        try:
+            return response.text[:500]
+        except Exception:
+            return None
+
 async def test_all_endpoints(base_url: str, token: str):
     """Test all API endpoints with real token"""
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=60.0, headers=MCP_JSON_HEADERS) as client:
         # Test 1: Health check
         try:
             response = await client.get(f"{base_url}/health")
-            print_result("Health check", response.status_code == 200, response.json())
+            print_result("Health check", response.status_code == 200, as_json(response))
         except Exception as e:
             print_result("Health check", False, str(e))
         
@@ -49,11 +76,11 @@ async def test_all_endpoints(base_url: str, token: str):
         
         for tool_name, args in utility_tests:
             try:
-                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
-                    "tool": tool_name,
-                    "arguments": args
-                })
-                print_result(f"Utility: {tool_name}", response.status_code == 200, response.json())
+                response = await client.post(
+                    f"{base_url}{TOOL_ENDPOINT}",
+                    json=build_tool_payload(tool_name, args),
+                )
+                print_result(f"Utility: {tool_name}", response.status_code == 200, as_json(response))
             except Exception as e:
                 print_result(f"Utility: {tool_name}", False, str(e))
         
@@ -106,7 +133,8 @@ async def test_all_endpoints(base_url: str, token: str):
                 "app_ids": "284882215",
                 "start_date": "2024-01-01",
                 "countries": "US",
-                "networks": "Facebook"
+                "networks": "Facebook",
+                "ad_types": "video"
             }),
             ("get_impressions", {
                 "os": "ios",
@@ -133,7 +161,8 @@ async def test_all_endpoints(base_url: str, token: str):
             ("get_category_history", {
                 "os": "ios",
                 "app_ids": "284882215",
-                "categories": "6005",
+                "category": "6005",
+                "chart_type_ids": "topfreeapplications",
                 "start_date": "2024-01-01",
                 "end_date": "2024-01-07",
                 "countries": "US"
@@ -171,11 +200,11 @@ async def test_all_endpoints(base_url: str, token: str):
         
         for tool_name, args in app_analysis_tests:
             try:
-                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
-                    "tool": tool_name,
-                    "arguments": args
-                })
-                print_result(f"App Analysis: {tool_name}", response.status_code == 200, response.json())
+                response = await client.post(
+                    f"{base_url}{TOOL_ENDPOINT}",
+                    json=build_tool_payload(tool_name, args),
+                )
+                print_result(f"App Analysis: {tool_name}", response.status_code == 200, as_json(response))
             except Exception as e:
                 print_result(f"App Analysis: {tool_name}", False, str(e))
         
@@ -206,11 +235,11 @@ async def test_all_endpoints(base_url: str, token: str):
         
         for tool_name, args in store_marketing_tests:
             try:
-                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
-                    "tool": tool_name,
-                    "arguments": args
-                })
-                print_result(f"Store Marketing: {tool_name}", response.status_code == 200, response.json())
+                response = await client.post(
+                    f"{base_url}{TOOL_ENDPOINT}",
+                    json=build_tool_payload(tool_name, args),
+                )
+                print_result(f"Store Marketing: {tool_name}", response.status_code == 200, as_json(response))
             except Exception as e:
                 print_result(f"Store Marketing: {tool_name}", False, str(e))
         
@@ -225,15 +254,22 @@ async def test_all_endpoints(base_url: str, token: str):
             }),
             ("get_top_and_trending", {
                 "os": "ios",
-                "category": "6005",
-                "country": "US",
-                "date": "2024-01-15"
+                "comparison_attribute": "absolute",
+                "time_range": "week",
+                "measure": "units",
+                "category": 6005,
+                "date": "2024-01-01",
+                "regions": "US",
+                "device_type": "total"
             }),
             ("get_top_publishers", {
                 "os": "ios",
-                "category": "6005",
-                "country": "US",
-                "date": "2024-01-15"
+                "comparison_attribute": "absolute",
+                "time_range": "month",
+                "measure": "revenue",
+                "category": 6005,
+                "date": "2024-01-01",
+                "country": "US"
             }),
             ("get_store_summary", {
                 "os": "ios",
@@ -245,29 +281,27 @@ async def test_all_endpoints(base_url: str, token: str):
         
         for tool_name, args in market_analysis_tests:
             try:
-                response = await client.post(f"{base_url}/mcp/tools/invoke", json={
-                    "tool": tool_name,
-                    "arguments": args
-                })
-                print_result(f"Market Analysis: {tool_name}", response.status_code == 200, response.json())
+                response = await client.post(
+                    f"{base_url}{TOOL_ENDPOINT}",
+                    json=build_tool_payload(tool_name, args),
+                )
+                print_result(f"Market Analysis: {tool_name}", response.status_code == 200, as_json(response))
             except Exception as e:
                 print_result(f"Market Analysis: {tool_name}", False, str(e))
 
 async def test_pypi_installation():
     """Test PyPI package installation in current environment"""
     try:
-        # Add parent directory to path to import main module
         import sys
         from pathlib import Path
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        
-        import main
-        print_result("PyPI package import", True, "Package imported successfully")
-        
-        # Test CLI availability
-        from main import mcp
-        print_result("FastMCP initialization", True, "MCP server initialized")
-        
+        sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+        from sensortower_mcp import server
+        if hasattr(server, "cli"):
+            print_result("PyPI package import", True, "Server module imported successfully")
+        else:
+            print_result("PyPI package import", False, "CLI entry point missing")
+            return False
     except ImportError as e:
         print_result("PyPI package import", False, str(e))
         print("Try: pip install sensortower-mcp")
@@ -290,10 +324,10 @@ async def test_docker_local():
             print_result("Docker container status", True, "Container is running")
             
             # Test health endpoint
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(headers=MCP_JSON_HEADERS) as client:
                 try:
                     response = await client.get("http://localhost:8666/health", timeout=5)
-                    print_result("Docker health endpoint", response.status_code == 200, response.json())
+                    print_result("Docker health endpoint", response.status_code == 200, as_json(response))
                 except Exception as e:
                     print_result("Docker health endpoint", False, str(e))
         else:
@@ -329,7 +363,7 @@ async def main():
         print("   Set SENSOR_TOWER_API_TOKEN to test all 27 endpoints")
     
     print("\n✅ Comprehensive testing complete!")
-    print(f"\nEndpoints tested: 27 total")
+    print("\nEndpoints tested: 27 total")
     print("- 4 Utility endpoints (country codes, categories, etc.)")
     print("- 16 App Analysis endpoints (metadata, sales, retention, etc.)")
     print("- 4 Store Marketing endpoints (featured apps, keywords, reviews)")
@@ -341,3 +375,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main()) 
+TOOL_ENDPOINT = os.getenv("MCP_TOOL_ENDPOINT", "/legacy/tools/invoke")

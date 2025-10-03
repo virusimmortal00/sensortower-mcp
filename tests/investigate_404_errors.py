@@ -12,11 +12,9 @@ Tools with 404 errors:
 """
 
 import os
-import sys
 import json
 import requests
-from typing import Dict, List, Any
-from pathlib import Path
+from typing import Dict, Any
 
 # Try to load .env file if available
 try:
@@ -102,7 +100,7 @@ class Usage404Investigator:
                 try:
                     data = response.json()
                     print(f"   📊 Response: {type(data)}")
-                except:
+                except Exception:
                     print("   📊 Response: Non-JSON data")
             elif response.status_code == 404:
                 self.print_test(description, "FAIL", "Still 404")
@@ -115,7 +113,7 @@ class Usage404Investigator:
                 try:
                     error = response.json()
                     print(f"   🔍 422 Error: {json.dumps(error, indent=6)}")
-                except:
+                except Exception:
                     pass
             else:
                 self.print_test(description, "UNKNOWN", f"Status {response.status_code}")
@@ -125,7 +123,7 @@ class Usage404Investigator:
     
     def _test_parameter_variations(self):
         """Test different parameter combinations for usage intelligence"""
-        print(f"\n🔍 Phase 2: Testing Parameter Variations")
+        print("\n🔍 Phase 2: Testing Parameter Variations")
         print("-" * 50)
         
         endpoint = "/v1/ios/usage_intelligence/active_users"
@@ -206,7 +204,7 @@ class Usage404Investigator:
                 try:
                     error = response.json()
                     print(f"   🔍 422 Details: {error}")
-                except:
+                except Exception:
                     pass
             else:
                 self.print_test(param_set["name"], "UNKNOWN", f"Status {response.status_code}")
@@ -216,7 +214,7 @@ class Usage404Investigator:
     
     def _test_access_requirements(self):
         """Test if endpoints require specific access levels"""
-        print(f"\n🔍 Phase 3: Testing Access Requirements")
+        print("\n🔍 Phase 3: Testing Access Requirements")
         print("-" * 50)
         
         # Test if these are premium-only endpoints
@@ -254,7 +252,7 @@ class Usage404Investigator:
     
     def _test_alternative_endpoints(self):
         """Test alternative endpoint patterns based on working tools"""
-        print(f"\n🔍 Phase 4: Testing Alternative Patterns")
+        print("\n🔍 Phase 4: Testing Alternative Patterns")
         print("-" * 50)
         
         # Based on working tools, try similar patterns

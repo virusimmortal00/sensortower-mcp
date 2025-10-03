@@ -7,13 +7,11 @@ Perfect for validating your fixes before publishing to PyPI.
 """
 
 import asyncio
-import importlib.util
-import json
 import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, Tuple
 
 # Add src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -35,14 +33,19 @@ class Colors:
 
 class MockFastMCP:
     """Mock FastMCP class to collect tool functions"""
+
     def __init__(self):
         self.tools = {}
-    
-    def tool(self, func):
-        """Decorator to collect tool functions"""
-        tool_name = f"mcp_sensortower_{func.__name__}"
-        self.tools[tool_name] = func
-        return func
+
+    def tool(self, *, name, description=None, annotations=None, meta=None):
+        def decorator(fn):
+            tool_name = f"mcp_sensortower_{name}"
+            self.tools[tool_name] = fn
+            setattr(fn, "meta", meta or {})
+            setattr(fn, "annotations", annotations or {})
+            return fn
+
+        return decorator
 
 class LocalMCPTester:
     def __init__(self):
@@ -180,7 +183,7 @@ class LocalMCPTester:
             error_msg = str(e)
             # Extract 422 error details if available
             if "422" in error_msg and "Unprocessable Content" in error_msg:
-                return ("ERROR", f"422 Parameter Validation Error", error_msg)
+                return ("ERROR", "422 Parameter Validation Error", error_msg)
             else:
                 return ("ERROR", f"Exception: {error_msg}", "")
 
@@ -339,12 +342,12 @@ class LocalMCPTester:
         """Run all local MCP tests"""
         self.print_header("LOCAL MCP PACKAGE TESTING")
         
-        print(f"🎯 Testing your LOCAL MCP implementation only")
+        print("🎯 Testing your LOCAL MCP implementation only")
         print(f"📦 Local Tools: {'✅ Available' if self.tools else '❌ Failed to load'} ({len(self.tools)} unique tools)")
         print(f"🔑 API Token: {'✅ Provided' if self.token else '❌ Missing'}")
         
         if not self.tools:
-            print(f"\n❌ Cannot run tests - MCP tools not available")
+            print("\n❌ Cannot run tests - MCP tools not available")
             return False
         
         # Run test suites
@@ -365,12 +368,12 @@ async def main():
         success = await tester.run_tests()
         
         if success:
-            print(f"\n🎉 Local MCP testing completed!")
+            print("\n🎉 Local MCP testing completed!")
         else:
-            print(f"\n💡 Testing could not complete.")
+            print("\n💡 Testing could not complete.")
             
     except KeyboardInterrupt:
-        print(f"\n⚠️  Tests interrupted by user")
+        print("\n⚠️  Tests interrupted by user")
         sys.exit(1)
     except Exception as e:
         print(f"\n💥 Unexpected error: {e}")
